@@ -14,9 +14,16 @@ export class UserService {
   };
 
   findByUsername = async (username: string) => {
-    const user = this.dbContext.user.findUnique({
+    const user = this.dbContext.user.findFirst({
       where: {
-        username,
+        OR: [
+          {
+            username: username,
+          },
+          {
+            studentId: username,
+          },
+        ],
       },
       select: {
         id: true,
@@ -26,6 +33,7 @@ export class UserService {
         fullName: true,
       },
     });
+
     return user;
   };
 
@@ -33,6 +41,7 @@ export class UserService {
     const user = this.dbContext.user.findUnique({
       where: { id },
     });
+
     return user;
   };
 

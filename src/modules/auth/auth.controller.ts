@@ -14,18 +14,19 @@ import { CreateUserDto } from '../user/dto';
 import { LoginCredentialDto } from './dto';
 import { AccessTokenGuard } from 'src/guard/accessToken.guard';
 import { RefreshTokenGuard } from 'src/guard/refreshToken.guard';
-
+import { ApiTags } from '@nestjs/swagger';
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('signup')
-  signup(@Body() createUserDto: CreateUserDto) {
+  @Post('signUp')
+  signUp(@Body() createUserDto: CreateUserDto) {
     return this.authService.signUp(createUserDto);
   }
 
-  @Post('signin')
-  signin(@Body() data: LoginCredentialDto) {
+  @Post('login')
+  login(@Body() data: LoginCredentialDto) {
     const { username, password } = data;
     return this.authService.signIn(username, password);
   }
