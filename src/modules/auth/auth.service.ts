@@ -19,8 +19,11 @@ export class AuthService {
 
   signIn = async (username: string, password: string) => {
     const user = await this.userService.findByUsername(username);
+
     if (!user) throw new BadRequestException('User does not exist');
+
     const passwordMatches = await compareHash(password, user.password);
+    
     if (!passwordMatches)
       throw new BadRequestException('Password is incorrect');
     const tokens = await this.getTokens(user.id, user.username);

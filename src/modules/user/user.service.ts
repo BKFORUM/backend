@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
+import { Pagination } from 'src/providers';
 
 @Injectable()
 export class UserService {
@@ -43,6 +44,18 @@ export class UserService {
     });
 
     return user;
+  };
+
+  getAllUsers = async ({ search, skip, take }: GetUsersQueryDto) => {
+    const [total, users] = await Promise.all([
+      this.dbContext.user.count({}),
+      this.dbContext.user.findMany({
+        skip,
+        take,
+      }),
+    ]);
+
+    return Pagination.of({ take, skip }, total, users);
   };
 
   updateUser = async (id: string, data: UpdateUserDto) => {
