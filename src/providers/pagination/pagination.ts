@@ -13,6 +13,8 @@ export class Pagination {
       skippedRecords: skip,
       totalRecords,
       data: dtos,
+      pages: Math.ceil(totalRecords / dtos.length),
+      currPage: 0,
       payloadSize: dtos.length,
       hasNext,
     };

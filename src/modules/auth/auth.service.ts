@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '../user/dto';
 import { compareHash, hashPassword } from 'src/common';
+import { getUsersPayload } from './dto/getUserPayload.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,17 +18,18 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  signIn = async (username: string, password: string) => {
+  login = async (username: string, password: string) => {
     const user = await this.userService.findByUsername(username);
 
     if (!user) throw new BadRequestException('User does not exist');
 
     const passwordMatches = await compareHash(password, user.password);
-    
+
     if (!passwordMatches)
       throw new BadRequestException('Password is incorrect');
-    const tokens = await this.getTokens(user.id, user.username);
+    const tokens = await this.getTokens(user);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
+
     return tokens;
   };
 
@@ -44,7 +46,8 @@ export class AuthService {
       ...createUserDto,
       password: hash,
     });
-    const tokens = await this.getTokens(newUser.id, newUser.username);
+
+    const tokens = await this.getTokens(newUser);
     await this.updateRefreshToken(newUser.id, tokens.refreshToken);
     return tokens;
   };
@@ -73,19 +76,25 @@ export class AuthService {
 
     if (!refreshTokenMatches) throw new ForbiddenException('Access Denied');
 
-    const tokens = await this.getTokens(user.id, user.username);
+    const tokens = await this.getTokens(user);
 
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return tokens;
   }
 
-  async getTokens(userId: string, username: string) {
+  async getTokens(userData: getUsersPayload) {
+    const user = {
+      username: userData.username,
+      name: userData.fullName,
+      roles: userData.roles.map((role) => role.role.name),
+    };
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
-          sub: userId,
-          username,
+          sub: userData.id,
+          ...user,
         },
         {
           secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
@@ -94,8 +103,8 @@ export class AuthService {
       ),
       this.jwtService.signAsync(
         {
-          sub: userId,
-          username,
+          sub: userData.id,
+          ...user,
         },
         {
           secret: this.configService.get<string>('JWT_REFRESH_SECRET'),

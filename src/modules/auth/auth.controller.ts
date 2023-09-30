@@ -14,7 +14,7 @@ import { CreateUserDto } from '../user/dto';
 import { LoginCredentialDto } from './dto';
 import { AccessTokenGuard } from 'src/guard/accessToken.guard';
 import { RefreshTokenGuard } from 'src/guard/refreshToken.guard';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -28,15 +28,17 @@ export class AuthController {
   @Post('login')
   login(@Body() data: LoginCredentialDto) {
     const { username, password } = data;
-    return this.authService.signIn(username, password);
+    return this.authService.login(username, password);
   }
 
+  @ApiBearerAuth()
   @UseGuards(AccessTokenGuard)
   @Get('logout')
   logout(@Req() req: Request) {
     this.authService.logout(req.user['sub']);
   }
 
+  @ApiBearerAuth()
   @UseGuards(RefreshTokenGuard)
   @Get('refresh')
   refreshTokens(@Req() req: Request) {
