@@ -38,7 +38,7 @@ export class GetAllRolesDto {
     description: `Order by keyword. \n\n  Available values: ${Object.values(
       GetAllRolesOrderByEnum,
     )}`,
-    example: `${GetAllRolesOrderByEnum}:${Prisma.SortOrder.asc}`,
+    example: `${GetAllRolesOrderByEnum.NAME}:${Prisma.SortOrder.asc}`,
   })
   @IsOptional()
   @IsString()

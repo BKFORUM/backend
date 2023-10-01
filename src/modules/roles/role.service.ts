@@ -5,11 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
-import { GetAllRolesDto, CreateRoleDto } from './dto';
+import { GetAllRolesDto, CreateRoleDto, UpdateRoleDto } from './dto';
 import { Prisma, Role } from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { Pagination } from 'src/providers';
-import { omit } from 'lodash';
+import { map, omit, pick } from 'lodash';
 import _ from 'lodash';
 
 @Injectable()
@@ -54,11 +54,11 @@ export class RoleService {
       }),
     ]);
 
-    return Pagination.of(
-      { take, skip },
-      total,
-      omit(roles, 'createdAt', 'updatedAt'),
+    const mappedRoles = roles.map((role) =>
+      omit(role, 'createdAt', 'updatedAt'),
     );
+
+    return Pagination.of({ take, skip }, total, mappedRoles);
   }
 
   async createRole(createRoleDto: CreateRoleDto) {
@@ -100,7 +100,7 @@ export class RoleService {
   async getRoleById(roleId: string) {
     const role = await this.dbContext.role.findUnique({
       where: { id: roleId },
-      select: {
+      include: {
         permissions: {
           include: {
             permission: true,
@@ -114,7 +114,7 @@ export class RoleService {
     }
 
     return {
-      ..._.pick(
+      ...pick(
         role,
         'id',
         'name',
@@ -123,7 +123,7 @@ export class RoleService {
         'canBeDeleted',
         'canBeUpdated',
       ),
-      permissions: _.map(role.permissions, (x) => x.permission),
+      permissions: role.permissions.map((x) => x.permission.displayName),
     };
   }
 
@@ -151,63 +151,64 @@ export class RoleService {
     });
   }
 
-  // async updateRole(roleInfo: Partial<Role>) {
-  //   const role = await this.dbContext.role.findFirst({
-  //     where: {
-  //       id: roleInfo.id,
-  //     },
-  //   });
+  async updateRole(id: string, roleInfo: UpdateRoleDto) {
+    const { permissions } = roleInfo;
+    const role = await this.dbContext.role.findUnique({
+      where: {
+        id,
+      },
+    });
 
-  //   if (!role) {
-  //     throw new NotFoundException('The requested role does not exist.');
-  //   }
+    if (!role) {
+      throw new NotFoundException('The requested role does not exist.');
+    }
 
-  //   if (!role.canBeUpdated)
-  //     throw new BadRequestException('This role cannot be updated.');
+    if (!role.canBeUpdated)
+      throw new BadRequestException('This role cannot be updated.');
 
-  //   if (role.name !== roleInfo.name) {
-  //     const foundRole = await this.dbContext.role.findFirst({
-  //       where: {
-  //         name: roleInfo.name,
-  //       },
-  //     });
+    if (role.name !== roleInfo.name) {
+      const foundRole = await this.dbContext.role.findFirst({
+        where: {
+          name: roleInfo.name,
+        },
+      });
 
-  //     if (foundRole)
-  //       throw new BadRequestException(
-  //         'A role with given name already exists. Please try again.',
-  //       );
-  //   }
+      if (foundRole)
+        throw new BadRequestException(
+          'A role with given name already exists. Please try again.',
+        );
+    }
 
-  //   const filteredPermissions = await this.dbContext.permission.findMany({
-  //     where: { id: { in: [...permissions] } },
-  //   });
+    const filteredPermissions = await this.dbContext.permission.findMany({
+      where: { id: { in: [...permissions] } },
+    });
 
-  //   const updatedRole = await this.dbContext.role.update({
-  //     where: {
-  //       id: roleInfo.id,
-  //     },
-  //     data: {
-  //       name: roleInfo.name,
-  //       displayName: roleInfo.name,
-  //       description: roleInfo.description,
-  //       permissions: {
-  //         deleteMany: {
-  //           permissionId: {
-  //             notIn: filteredPermissions.map((x) => x.id),
-  //           },
-  //         },
-  //         createMany: {
-  //           data: filteredPermissions.map((p) => ({
-  //             permissionId: p.id,
-  //           })),
-  //           skipDuplicates: true,
-  //         },
-  //       },
-  //     },
-  //   });
+    const updatedRole = await this.dbContext.role.update({
+      where: {
+        id: id,
+      },
+      data: {
+        name: roleInfo.name,
+        displayName: roleInfo.name,
+        description: roleInfo.description,
+        permissions: {
+          deleteMany: {
+            permissionId: {
+              notIn: filteredPermissions.map((x) => x.id),
+            },
+          },
+          createMany: {
+            data: filteredPermissions.map((p) => ({
+              permissionId: p.id,
+            })),
+            skipDuplicates: true,
+          },
+        },
+      },
+    });
 
-  //   this.logger.log({ updatedRole }, 'updated role record');
-  // }
+    this.logger.log({ updatedRole }, 'updated role record');
+  }
 
   async checkRoles(roles: string[]) {
     if (!roles) {
