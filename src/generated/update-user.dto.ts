@@ -34,4 +34,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   refreshToken?: string | null;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string | null;
 }

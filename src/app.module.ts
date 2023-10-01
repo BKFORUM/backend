@@ -11,9 +11,9 @@ import { RoleModule } from './modules/roles';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    AuthModule,
     UserModule,
     RoleModule,
-    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
