@@ -5,7 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 generator nestjsDto {
   provider                        = "prisma-generator-nestjs-dto"
   output                          = "../src/generated"
@@ -30,19 +29,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User{
-  id String @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  createdAt DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @map("updated_at") @default(now()) @updatedAt @db.Timestamptz(6)
-  fullName String @map("full_name") @db.VarChar(100)
-  username String @map("username") @db.VarChar(255)
-  studentId String? @map("student_id") @db.VarChar(255)
-  password String @map("password") 
-  refreshToken String? @map("refresh_token")
-  roles UserToRole[]
-  avatarUrl String? @map("avatar_url") @db.VarChar(255)
+model User {
+  id           String       @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  fullName     String       @map("full_name") @db.VarChar(100)
+  username     String       @map("username") @db.VarChar(255)
+  studentId    String?      @map("student_id") @db.VarChar(255)
+  password     String       @map("password")
+  refreshToken String?      @map("refresh_token")
+  roles        UserToRole[]
+  avatarUrl    String?      @map("avatar_url") @db.VarChar(255)
 
-  @@unique([username],map: "ixuq_user_username")
+  @@unique([username], map: "ixuq_user_username")
   @@map("user")
 }
 
@@ -112,6 +111,7 @@ model RoleToPermission {
   @@id([roleId, permissionId])
   @@map("role_to_permission")
 }
+
 model PermissionGroup {
   id           Int      @id(map: "pk_permission_info") @default(autoincrement()) @db.Integer
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
