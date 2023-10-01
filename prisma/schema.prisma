@@ -40,7 +40,7 @@ model User{
   password String @map("password") 
   refreshToken String? @map("refresh_token")
   roles UserToRole[]
-  permissions UserToPermission[]
+  avatarUrl String? @map("avatar_url") @db.VarChar(255)
 
   @@unique([username],map: "ixuq_user_username")
   @@map("user")
@@ -92,7 +92,6 @@ model Permission {
 
   //Relation
   roles           RoleToPermission[]
-  users           UserToPermission[]
   permissionGroup PermissionGroup?   @relation(fields: [permissionGroupId], references: [id], map: "fk_permission_permission_group")
 
   //Index
@@ -113,21 +112,6 @@ model RoleToPermission {
   @@id([roleId, permissionId])
   @@map("role_to_permission")
 }
-
-model UserToPermission {
-  userId       String   @map("user_id") @db.Uuid
-  permissionId Int      @map("permission_id") @db.Integer
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  //Relation
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_to_permission_user")
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, map: "fk_user_to_permission_role")
-
-  @@id([userId, permissionId])
-  @@map("user_to_permission")
-}
-
 model PermissionGroup {
   id           Int      @id(map: "pk_permission_info") @default(autoincrement()) @db.Integer
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

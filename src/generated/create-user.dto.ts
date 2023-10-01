@@ -28,4 +28,11 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   refreshToken?: string;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
 }

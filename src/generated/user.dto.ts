@@ -39,4 +39,9 @@ export class UserDto {
     nullable: true,
   })
   refreshToken: string | null;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+  })
+  avatarUrl: string | null;
 }

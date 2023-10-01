@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleToPermissionEntity } from './role-to-permission.entity';
-import { UserToPermissionEntity } from './user-to-permission.entity';
 import { PermissionGroupEntity } from './permission-group.entity';
 
 export class PermissionEntity {
@@ -63,11 +62,6 @@ export class PermissionEntity {
     required: false,
   })
   roles?: RoleToPermissionEntity[];
-  @ApiProperty({
-    isArray: true,
-    required: false,
-  })
-  users?: UserToPermissionEntity[];
   @ApiProperty({
     required: false,
     nullable: true,
