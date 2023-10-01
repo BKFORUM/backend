@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { UserToRoleEntity } from './user-to-role.entity';
+import { ForumEntity } from './forum.entity';
+import { UserToForumEntity } from './user-to-forum.entity';
 
 export class UserEntity {
   @ApiProperty({
@@ -41,13 +43,23 @@ export class UserEntity {
   })
   refreshToken: string | null;
   @ApiProperty({
+    required: false,
+    nullable: true,
+  })
+  avatarUrl: string | null;
+  @ApiProperty({
     isArray: true,
     required: false,
   })
   roles?: UserToRoleEntity[];
   @ApiProperty({
+    isArray: true,
     required: false,
-    nullable: true,
   })
-  avatarUrl: string | null;
+  forums?: ForumEntity[];
+  @ApiProperty({
+    isArray: true,
+    required: false,
+  })
+  userToForum?: UserToForumEntity[];
 }
