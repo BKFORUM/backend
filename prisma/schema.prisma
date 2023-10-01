@@ -147,8 +147,8 @@ model Forum {
   modId     String         @map("mod_id") @db.Uuid
   status    ResourceStatus @default(PENDING)
 
-  user        User          @relation(fields: [modId], references: [id], onDelete: Cascade)
-  userToForum UserToForum[]
+  moderator        User          @relation(fields: [modId], references: [id], onDelete: Cascade)
+  forums UserToForum[]
 
   @@map("forum")
 }
