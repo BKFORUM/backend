@@ -27,7 +27,7 @@ export class UserService {
     const user = await this.dbContext.user.create({
       data: {
         fullName,
-        password: await hashPassword(password),
+        password,
         username,
         roles: {
           create: rolesData.map((role) => ({
