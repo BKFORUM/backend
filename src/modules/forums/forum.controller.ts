@@ -4,7 +4,7 @@ import {
   HttpCode,
   HttpStatus,
   Query,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorator';
@@ -26,13 +26,14 @@ export class ForumController {
   constructor(private readonly forumService: ForumService) {}
 
   @ApiOperation({
-    description: 'Get all forums only by ADMIN'
+    description: 'Get all forums only by ADMIN',
   })
   @Roles(UserRole.ADMIN)
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getAllForums(@Query() query: GetAllForumsDto): Promise<PaginatedResult<ForumResponse>> {
+  async getAllForums(
+    @Query() query: GetAllForumsDto,
+  ): Promise<PaginatedResult<ForumResponse>> {
     return await this.forumService.getAllForums(query);
   }
-
 }

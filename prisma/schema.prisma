@@ -5,25 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator nestjsDto {
-  provider                        = "prisma-generator-nestjs-dto"
-  output                          = "../src/generated"
-  outputToNestJsResourceStructure = "false"
-  flatResourceStructure           = "false"
-  exportRelationModifierClasses   = "true"
-  reExport                        = "true"
-  createDtoPrefix                 = "Create"
-  updateDtoPrefix                 = "Update"
-  dtoSuffix                       = "Dto"
-  entityPrefix                    = ""
-  entitySuffix                    = "Entity"
-  classValidation                 = "true"
-  fileNamingStyle                 = "kebab"
-  noDependencies                  = "false"
-  outputType                      = "class"
-  prettier                        = "true"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -40,6 +21,11 @@ enum GroupUserType {
   MODERATOR
 }
 
+enum ForumType {
+  TOPIC
+  HOMEROOM
+}
+
 model User {
   id           String   @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -54,6 +40,7 @@ model User {
   roles       UserToRole[]
   forums      Forum[]
   userToForum UserToForum[]
+  posts       Post[]
 
   @@unique([username], map: "ixuq_user_username")
   @@map("user")
@@ -146,9 +133,10 @@ model Forum {
   name      String         @db.VarChar(100)
   modId     String         @map("mod_id") @db.Uuid
   status    ResourceStatus @default(PENDING)
-
-  moderator User          @relation(fields: [modId], references: [id], onDelete: Cascade)
-  users    UserToForum[]
+  type      ForumType      @default(HOMEROOM)
+  moderator User           @relation(fields: [modId], references: [id], onDelete: Cascade)
+  users     UserToForum[]
+  posts     Post[]
 
   @@map("forum")
 }
@@ -163,4 +151,20 @@ model UserToForum {
 
   @@id([userId, forumId])
   @@map("user_to_forum")
+}
+
+model Post {
+  id        String         @id(map: "pk_post") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  forumId   String         @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
+  status    ResourceStatus @default(PENDING)
+  title     String         @db.VarChar(100)
+  content   String         @db.Text
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  forum Forum @relation(fields: [forumId], references: [id], onDelete: Cascade)
+
+  @@map("post")
 }

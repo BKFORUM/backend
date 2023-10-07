@@ -1,7 +1,5 @@
-import {
-  Injectable
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { Forum, Prisma } from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -12,7 +10,12 @@ import { ForumResponse } from './interfaces';
 export class ForumService {
   constructor(private readonly dbContext: PrismaService) {}
 
-  async getAllForums({ skip, take, order, search }: GetAllForumsDto): Promise<PaginatedResult<ForumResponse>> {
+  async getAllForums({
+    skip,
+    take,
+    order,
+    search,
+  }: GetAllForumsDto): Promise<PaginatedResult<ForumResponse>> {
     let whereConditions: Prisma.ForumWhereInput = {};
     if (search) {
       whereConditions = {
@@ -26,8 +29,17 @@ export class ForumService {
 
     let orderBy: Prisma.ForumOrderByWithRelationInput = {};
 
+    const mappedOrderType = {
+      moderator: 'moderator.fullName',
+      totalUsers: 'users._count',
+    };
+
     if (order) {
-      orderBy = getOrderBy('createdAt', order);
+      orderBy = getOrderBy<Forum>({
+        defaultValue: 'createdAt',
+        order,
+        mappedOrder: mappedOrderType,
+      });
     }
 
     const [total, forums] = await Promise.all([
@@ -46,21 +58,21 @@ export class ForumService {
           moderator: {
             select: {
               id: true,
-              fullName: true
-            }
+              fullName: true,
+            },
           },
+          type: true,
           name: true,
           status: true,
           _count: {
             select: {
-              users: true
-            }
-          }
-        }
+              users: true,
+            },
+          },
+        },
       }),
     ]);
 
     return Pagination.of({ take, skip }, total, forums);
   }
-
 }
