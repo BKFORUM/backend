@@ -1,10 +1,18 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/database/services';
-import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
-import { Pagination } from 'src/providers';
-import { uniq } from 'lodash';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { isEmpty } from 'lodash';
 import { hashPassword } from 'src/common';
+import { getOrderBy } from 'src/common/utils/prisma';
+import { PrismaService } from 'src/database/services';
+import { PaginatedResult, Pagination } from 'src/providers';
 import { RoleService } from '../roles';
+import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
+import { UserResponse } from './interfaces';
+import { filterByNotInForum, filterBySearch } from './utils';
 
 @Injectable()
 export class UserService {
@@ -113,17 +121,58 @@ export class UserService {
     return user;
   };
 
-  getAllUsers = async ({ search, skip, take }: GetUsersQueryDto) => {
-    const [total, users] = await Promise.all([
-      this.dbContext.user.count({}),
+  async getAllUsers({
+    search,
+    forumId,
+    order,
+    take,
+    skip,
+  }: GetUsersQueryDto): Promise<PaginatedResult<UserResponse>> {
+    if (forumId) {
+      const forum = await this.dbContext.forum.findUnique({
+        where: { id: forumId },
+      });
+
+      if (isEmpty(forum)) {
+        throw new NotFoundException('The forum does not exist');
+      }
+    }
+
+    let orderBy;
+
+    if (order) {
+      orderBy = getOrderBy('createdAt', order);
+    }
+
+    const [users, total] = await Promise.all([
       this.dbContext.user.findMany({
+        where: {
+          ...filterBySearch(search),
+          ...filterByNotInForum(forumId),
+        },
+        orderBy,
         skip,
         take,
+        select: {
+          id: true,
+          fullName: true,
+          studentId: true,
+          username: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.dbContext.user.count({
+        where: {
+          ...filterBySearch(search),
+          ...filterByNotInForum(forumId),
+        },
       }),
     ]);
 
-    return Pagination.of({ take, skip }, total, users);
-  };
+    return Pagination.of({ skip, take }, total, users);
+  }
 
   updateUser = async (id: string, data: UpdateUserDto) => {
     const { roles, fullName, password, refreshToken } = data;

@@ -1,6 +1,4 @@
-import {
-  Injectable
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
@@ -12,7 +10,12 @@ import { ForumResponse } from './interfaces';
 export class ForumService {
   constructor(private readonly dbContext: PrismaService) {}
 
-  async getAllForums({ skip, take, order, search }: GetAllForumsDto): Promise<PaginatedResult<ForumResponse>> {
+  async getAllForums({
+    skip,
+    take,
+    order,
+    search,
+  }: GetAllForumsDto): Promise<PaginatedResult<ForumResponse>> {
     let whereConditions: Prisma.ForumWhereInput = {};
     if (search) {
       whereConditions = {
@@ -46,21 +49,20 @@ export class ForumService {
           moderator: {
             select: {
               id: true,
-              fullName: true
-            }
+              fullName: true,
+            },
           },
           name: true,
           status: true,
           _count: {
             select: {
-              users: true
-            }
-          }
-        }
+              users: true,
+            },
+          },
+        },
       }),
     ]);
 
     return Pagination.of({ take, skip }, total, forums);
   }
-
 }
