@@ -1,0 +1,3 @@
+-- This is an empty migration.
+INSERT INTO "faculty"("name","displayName") VALUES ('Cơ khí','Cơ khí'),('Cơ khí Giao thông','Cơ khí Giao thông'),('Công nghệ Nhiệt – Điện lanh','Công nghệ Nhiệt – Điện lanh'),('Công nghệ Thông tin','Công nghệ Thông tin'),('Điện','Điện'),('Điện tử - Viễn thông','Điện tử - Viễn thông'),('Hóa','Hóa'),('Sư phạm Kỹ thuật','Sư phạm Kỹ thuật'),('Cầu 
+Đường','Cầu Đường'),('Dân dụng và Công nghiệp','Dân dụng và Công nghiệp'),('Thủy lợi – Thủy điện','Thủy lợi – Thủy điện'),('Quản lý Dự án','Quản lý Dự án'),('Môi trường','Môi trường'),('Kiến Trúc','Kiến Trúc'),('PFIEV','PFIEV')

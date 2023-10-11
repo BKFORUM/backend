@@ -35,7 +35,7 @@ export class AuthService {
 
   signUp = async (createUserDto: CreateUserDto) => {
     const userExists = await this.userService.findByUsername(
-      createUserDto.username,
+      createUserDto.email,
     );
     if (userExists) {
       throw new BadRequestException('User already exists');
@@ -85,7 +85,7 @@ export class AuthService {
 
   async getTokens(userData: getUsersPayload) {
     const user = {
-      username: userData.username,
+      email: userData.email,
       name: userData.fullName,
       roles: userData.roles.map((role) => role.role.name),
     };

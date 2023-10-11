@@ -2,9 +2,11 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { Pagination } from 'src/providers';
-import { uniq } from 'lodash';
+import { isEmpty, uniq } from 'lodash';
 import { hashPassword } from 'src/common';
 import { RoleService } from '../roles';
+import { ppid } from 'process';
+import { isNotEmpty } from 'class-validator';
 
 @Injectable()
 export class UserService {
@@ -16,7 +18,8 @@ export class UserService {
   private readonly logger: Logger = new Logger(UserService.name);
 
   createUser = async (data: CreateUserDto) => {
-    const { fullName, password, username, roles } = data;
+    const { fullName, password, email, roles, dateOfBirth, gender, facultyId } =
+      data;
 
     const rolesData = await this.roleService.checkRoles(roles);
 
@@ -24,14 +27,23 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const existedUsername = await this.findByUsername(email);
+
+    if (isNotEmpty(existedUsername)) {
+      throw new BadRequestException('The username has already been used');
+    }
+
     const user = await this.dbContext.user.create({
       data: {
         fullName,
         password,
-        username,
+        email,
+        dateOfBirth: new Date(dateOfBirth).toISOString(),
+        gender,
+        facultyId,
         roles: {
           create: rolesData.map((role) => ({
-            roleId: role,
+            roleId: role.id,
           })),
         },
       },
@@ -61,16 +73,13 @@ export class UserService {
       where: {
         OR: [
           {
-            username: username,
-          },
-          {
-            studentId: username,
+            email: username,
           },
         ],
       },
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         refreshToken: true,
         fullName: true,
@@ -94,7 +103,7 @@ export class UserService {
       where: { id },
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         refreshToken: true,
         fullName: true,
@@ -136,16 +145,27 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const existedUser = await this.dbContext.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+      },
+    });
+
+    if (isEmpty(existedUser.id)) {
+      throw new BadRequestException('The user does not exist');
+    }
+
     const updateRoles =
       rolesData.length > 0
         ? {
             deleteMany: {
               roleId: {
-                notIn: rolesData,
+                notIn: rolesData.map(({ id }) => id),
               },
             },
             createMany: {
-              data: rolesData.map((x) => ({ roleId: x })),
+              data: rolesData.map((x) => ({ roleId: x.id })),
               skipDuplicates: true,
             },
           }

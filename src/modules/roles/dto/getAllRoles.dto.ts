@@ -22,7 +22,7 @@ export class GetAllRolesDto {
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  skip = 0;
+  skip: number = 0;
 
   @ApiPropertyOptional({
     description: 'Number of records to return and then skip over the remainder',
@@ -32,7 +32,7 @@ export class GetAllRolesDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  take = 10;
+  take: number = 10;
 
   @ApiPropertyOptional({
     description: `Order by keyword. \n\n  Available values: ${Object.values(
