@@ -8,6 +8,7 @@ import { PostResponse } from './interfaces/post-response.interface';
 import { CreatePostDto } from './dto/create-post.dto';
 import { RequestUser } from '@common/types';
 import { isEmpty } from 'class-validator';
+import { UserRole } from '@common/types/enum';
 
 @Injectable()
 export class PostService {
@@ -16,11 +17,24 @@ export class PostService {
 
   async getAllPosts(
     query: GetAllPostsDto,
+    user: RequestUser,
   ): Promise<PaginatedResult<PostResponse>> {
     const { search, skip, take, order } = query;
-    let whereConditions: Prisma.PostWhereInput = {};
+    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [];
+    if (!user.roles.includes(UserRole.ADMIN)) {
+      whereConditions.push({
+        forum: {
+          users: {
+            every: {
+              userId: user.id,
+            },
+          },
+        },
+      });
+    }
+
     if (search) {
-      whereConditions = {
+      whereConditions.push({
         OR: [
           {
             title: searchByMode(search),
@@ -29,10 +43,10 @@ export class PostService {
             content: searchByMode(search),
           },
         ],
-      };
+      });
     }
 
-    let orderBy: Prisma.ForumOrderByWithRelationInput = {};
+    let orderBy: Prisma.PostOrderByWithRelationInput = {};
 
     if (order) {
       orderBy = getOrderBy({ defaultValue: 'createdAt', order });
@@ -40,10 +54,14 @@ export class PostService {
 
     const [total, posts] = await Promise.all([
       this.dbContext.post.count({
-        where: whereConditions,
+        where: {
+          AND: whereConditions,
+        },
       }),
       this.dbContext.post.findMany({
-        where: whereConditions,
+        where: {
+          AND: whereConditions,
+        },
         skip,
         orderBy,
         take,

@@ -1,5 +1,7 @@
+import { UserRole } from '@common/types/enum';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -24,9 +26,10 @@ export class CreateUserDto {
   fullName: string;
 
   @ApiProperty({
-    description: 'Role ids',
+    description: 'Role names',
+    example: [UserRole.ADMIN],
   })
   @IsArray()
-  @IsUUID('4', { each: true })
-  roles: string[];
+  @IsEnum(UserRole, { each: true })
+  roles: UserRole[];
 }

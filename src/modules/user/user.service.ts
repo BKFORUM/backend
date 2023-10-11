@@ -2,9 +2,11 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { Pagination } from 'src/providers';
-import { uniq } from 'lodash';
+import { isEmpty, uniq } from 'lodash';
 import { hashPassword } from 'src/common';
 import { RoleService } from '../roles';
+import { ppid } from 'process';
+import { isNotEmpty } from 'class-validator';
 
 @Injectable()
 export class UserService {
@@ -24,6 +26,12 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const existedUsername = await this.findByUsername(username);
+
+    if (isNotEmpty(existedUsername)) {
+      throw new BadRequestException('The username has already been used');
+    }
+
     const user = await this.dbContext.user.create({
       data: {
         fullName,
@@ -31,7 +39,7 @@ export class UserService {
         username,
         roles: {
           create: rolesData.map((role) => ({
-            roleId: role,
+            roleId: role.id,
           })),
         },
       },
@@ -136,16 +144,27 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const existedUser = await this.dbContext.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+      },
+    });
+
+    if (isEmpty(existedUser.id)) {
+      throw new BadRequestException('The user does not exist');
+    }
+
     const updateRoles =
       rolesData.length > 0
         ? {
             deleteMany: {
               roleId: {
-                notIn: rolesData,
+                notIn: rolesData.map(({ id }) => id),
               },
             },
             createMany: {
-              data: rolesData.map((x) => ({ roleId: x })),
+              data: rolesData.map((x) => ({ roleId: x.id })),
               skipDuplicates: true,
             },
           }
