@@ -39,7 +39,7 @@ export class RoleService {
     let orderBy: Prisma.RoleOrderByWithRelationInput;
 
     if (order) {
-      orderBy = getOrderBy({ defaultValue: 'createdAt', order });
+      orderBy = getOrderBy<Role>({ defaultValue: 'createdAt', order });
     }
 
     const [total, roles] = await Promise.all([

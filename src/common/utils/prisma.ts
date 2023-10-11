@@ -21,9 +21,14 @@ export const getOrderBy = <T>(option: {
   }
 
   const [field, direction] = order.split(':');
-  const mappedField = mappedOrder[`${field}`] ?? field;
+
+  const mappedField =
+    mappedOrder && Object.keys(mappedOrder).includes(field)
+      ? mappedOrder[`${field}`]
+      : field;
+
+  console.log(mappedField);
   const [, ...property] = mappedField.split('.');
-  console.log(property);
 
   if (property.length > 0) {
     return set({}, mappedField, direction);

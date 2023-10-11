@@ -18,7 +18,8 @@ export class UserService {
   private readonly logger: Logger = new Logger(UserService.name);
 
   createUser = async (data: CreateUserDto) => {
-    const { fullName, password, username, roles } = data;
+    const { fullName, password, email, roles, dateOfBirth, gender, facultyId } =
+      data;
 
     const rolesData = await this.roleService.checkRoles(roles);
 
@@ -26,7 +27,7 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
-    const existedUsername = await this.findByUsername(username);
+    const existedUsername = await this.findByUsername(email);
 
     if (isNotEmpty(existedUsername)) {
       throw new BadRequestException('The username has already been used');
@@ -36,7 +37,10 @@ export class UserService {
       data: {
         fullName,
         password,
-        username,
+        email,
+        dateOfBirth: new Date(dateOfBirth).toISOString(),
+        gender,
+        facultyId,
         roles: {
           create: rolesData.map((role) => ({
             roleId: role.id,
@@ -69,16 +73,13 @@ export class UserService {
       where: {
         OR: [
           {
-            username: username,
-          },
-          {
-            studentId: username,
+            email: username,
           },
         ],
       },
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         refreshToken: true,
         fullName: true,
@@ -102,7 +103,7 @@ export class UserService {
       where: { id },
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         refreshToken: true,
         fullName: true,

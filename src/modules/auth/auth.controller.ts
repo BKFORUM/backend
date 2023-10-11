@@ -27,8 +27,8 @@ export class AuthController {
 
   @Post('login')
   login(@Body() data: LoginCredentialDto) {
-    const { username, password } = data;
-    return this.authService.login(username, password);
+    const { email, password } = data;
+    return this.authService.login(email, password);
   }
 
   @ApiBearerAuth()
