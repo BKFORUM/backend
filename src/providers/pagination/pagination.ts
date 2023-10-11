@@ -4,6 +4,8 @@ export declare class PaginatedResult<T> {
   skippedRecords: number;
   payloadSize: number;
   hasNext: boolean;
+  pages: number;
+  currPage: number;
 }
 
 export class Pagination {
@@ -13,8 +15,8 @@ export class Pagination {
       skippedRecords: skip,
       totalRecords,
       data: dtos,
-      pages: Math.ceil(totalRecords / dtos.length),
-      currPage: 0,
+      pages: Math.ceil(totalRecords / (dtos.length || 1)),
+      currPage: Math.floor(skip / take) + 1,
       payloadSize: dtos.length,
       hasNext,
     };

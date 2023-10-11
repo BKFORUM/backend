@@ -9,8 +9,9 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
       secretOrKey: configService.get('JWT_ACCESS_SECRET'),
+      ignoreExpiration: false,
+      usernameField: 'email',
     });
   }
 

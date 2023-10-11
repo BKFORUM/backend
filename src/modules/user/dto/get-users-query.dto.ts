@@ -1,7 +1,16 @@
+import { BadRequestException } from '@nestjs/common';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { IsOrderQueryParam } from 'src/common/decorator';
 import { GetAllUsersOrderByEnum } from '../user.enum';
 
@@ -43,11 +52,27 @@ export class GetUsersQueryDto {
   @IsOrderQueryParam('order', GetAllUsersOrderByEnum)
   order?: string;
 
-  @ApiPropertyOptional({
-    description: 'This forumId to filter the users are not in the forum',
+  @ApiPropertyOptional()
+  @ValidateIf((dto, value) => {
+    if (value && dto.isInForum === undefined) {
+      throw new BadRequestException(
+        'The forumId is sent when the isInForum is sent',
+      );
+    }
+
+    return true;
   })
-  @IsUUID('4')
   @IsString()
   @IsOptional()
+  @IsUUID('4')
   forumId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'This value to specify the returned list users are in or not in the forum and there is no effect if sending this field without forumId',
+  })
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true')
+  @IsOptional()
+  isInForum?: boolean;
 }

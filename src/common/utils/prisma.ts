@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { set } from 'lodash';
 
 export const searchByMode = (
   search?: string,
@@ -7,7 +8,12 @@ export const searchByMode = (
   return search ? { contains: search, mode } : undefined;
 };
 
-export const getOrderBy = (defaultValue: string, order?: string) => {
+export const getOrderBy = <T>(option: {
+  defaultValue: keyof T;
+  order?: string;
+  mappedOrder?: any;
+}) => {
+  const { defaultValue, order, mappedOrder } = option;
   if (!order) {
     return {
       [defaultValue]: Prisma.SortOrder.asc,
@@ -15,6 +21,19 @@ export const getOrderBy = (defaultValue: string, order?: string) => {
   }
 
   const [field, direction] = order.split(':');
+
+  const mappedField =
+    mappedOrder && Object.keys(mappedOrder).includes(field)
+      ? mappedOrder[`${field}`]
+      : field;
+
+  console.log(mappedField);
+  const [, ...property] = mappedField.split('.');
+
+  if (property.length > 0) {
+    return set({}, mappedField, direction);
+  }
+
   return {
     [field]: direction,
   };

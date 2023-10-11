@@ -1,0 +1,22 @@
+version: '3'
+services:
+  app:                              # Comment this field if in local development
+    image: ${REGISTRY}:latest         
+    ports:
+      - "80:${APP_PORT}"
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:latest
+    container_name: db-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - data:/var/lib/postgresql/data
+
+volumes:
+  data:

@@ -5,25 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator nestjsDto {
-  provider                        = "prisma-generator-nestjs-dto"
-  output                          = "../src/generated"
-  outputToNestJsResourceStructure = "false"
-  flatResourceStructure           = "false"
-  exportRelationModifierClasses   = "true"
-  reExport                        = "true"
-  createDtoPrefix                 = "Create"
-  updateDtoPrefix                 = "Update"
-  dtoSuffix                       = "Dto"
-  entityPrefix                    = ""
-  entitySuffix                    = "Entity"
-  classValidation                 = "true"
-  fileNamingStyle                 = "kebab"
-  noDependencies                  = "false"
-  outputType                      = "class"
-  prettier                        = "true"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -40,23 +21,58 @@ enum GroupUserType {
   MODERATOR
 }
 
+enum ForumType {
+  TOPIC
+  HOMEROOM
+}
+
+enum UserType {
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
 model User {
   id           String   @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   fullName     String   @map("full_name") @db.VarChar(100)
-  username     String   @map("username") @db.VarChar(255)
-  studentId    String?  @map("student_id") @db.VarChar(255)
+  email        String   @map("email") @db.VarChar(255)
+  dateOfBirth  DateTime @map("date_of_birth") @db.Date
+  gender       Gender
   password     String   @map("password")
   refreshToken String?  @map("refresh_token")
   avatarUrl    String?  @map("avatar_url") @db.VarChar(255)
+  type         UserType @default(STUDENT)
+  facultyId    String   @map("faculty_id") @db.Uuid
 
+  faculty     Faculty       @relation(fields: [facultyId], references: [id], map: "fk_user_faculty")
   roles       UserToRole[]
   forums      Forum[]
   userToForum UserToForum[]
+  posts       Post[]
+  comments    Comment[]
+  likes       Like[]
 
-  @@unique([username], map: "ixuq_user_username")
+  @@unique([email], map: "ixuq_user_email")
   @@map("user")
+}
+
+model Faculty {
+  id          String   @id(map: "pk_faculty") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  name        String   @db.VarChar(50)
+  displayName String   @db.VarChar(50)
+
+  users User[]
+
+  @@unique([name], map: "ixuq_faculty_name")
+  @@map("faculty")
 }
 
 model Role {
@@ -146,9 +162,12 @@ model Forum {
   name      String         @db.VarChar(100)
   modId     String         @map("mod_id") @db.Uuid
   status    ResourceStatus @default(PENDING)
+  type      ForumType      @default(HOMEROOM)
 
-  moderator User          @relation(fields: [modId], references: [id], onDelete: Cascade)
-  users    UserToForum[]
+  moderator User           @relation(fields: [modId], references: [id], onDelete: Cascade)
+  users     UserToForum[]
+  posts     Post[]
+  topics    ForumToTopic[]
 
   @@map("forum")
 }
@@ -163,4 +182,81 @@ model UserToForum {
 
   @@id([userId, forumId])
   @@map("user_to_forum")
+}
+
+model Post {
+  id        String         @id(map: "pk_post") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  forumId   String         @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
+  status    ResourceStatus @default(PENDING)
+  title     String         @db.VarChar(100)
+  content   String         @db.Text
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  forum    Forum     @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    Like[]
+
+  @@map("post")
+}
+
+model Comment {
+  id        String         @id(map: "pk_comment") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  postId    String         @default(dbgenerated("uuid_generate_v4()")) @map("post_id") @db.Uuid
+  status    ResourceStatus @default(PENDING)
+  title     String         @db.VarChar(100)
+  content   String         @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("comment")
+}
+
+model Like {
+  userId    String   @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  postId    String   @default(dbgenerated("uuid_generate_v4()")) @map("post_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId], map: "pk_like")
+  @@map("like")
+}
+
+model Topic {
+  id          String   @id(map: "pk_topic") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  name        String   @db.VarChar(50)
+  displayName String?  @map("display_name") @db.VarChar(50)
+  description String
+
+  forums ForumToTopic[]
+
+  @@unique([name], map: "ixuq_topic_name")
+  @@map("topic")
+}
+
+model ForumToTopic {
+  id        String   @id(map: "pk_form_to_topic") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  topicId   String   @map("topic_id") @db.Uuid
+  forumId   String   @map("forum_id") @db.Uuid
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  forum Forum @relation(fields: [forumId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, forumId], map: "ixuq_forum_to_topic")
+  @@index([topicId])
+  @@index([forumId])
+  @@map("forum_to_topic")
 }

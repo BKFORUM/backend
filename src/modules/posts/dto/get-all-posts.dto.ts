@@ -3,9 +3,9 @@ import { Prisma } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsOptional, IsString, IsInt, Min } from 'class-validator';
 import { IsOrderQueryParam } from 'src/common/decorator';
-import { GetAllForumsOrderByEnum } from '../forum.enum';
+import { GetAllPostsOrderByEnum } from '../post.enum';
 
-export class GetAllForumsDto {
+export class GetAllPostsDto {
   @ApiPropertyOptional({
     description: 'Search by keyword',
     example: 'Test',
@@ -36,12 +36,12 @@ export class GetAllForumsDto {
 
   @ApiPropertyOptional({
     description: `Order by keyword. \n\n  Available values: ${Object.values(
-      GetAllForumsOrderByEnum,
+      GetAllPostsOrderByEnum,
     )}`,
-    example: `${GetAllForumsOrderByEnum.NAME}:${Prisma.SortOrder.asc}`,
+    example: `${GetAllPostsOrderByEnum.TITLE}:${Prisma.SortOrder.asc}`,
   })
   @IsOptional()
   @IsString()
-  @IsOrderQueryParam('order', GetAllForumsOrderByEnum)
+  @IsOrderQueryParam('order', GetAllPostsOrderByEnum)
   order?: string;
 }

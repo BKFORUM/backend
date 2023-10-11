@@ -4,6 +4,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { User } from '@prisma/client';
+import { isNotEmpty } from 'class-validator';
 import { isEmpty } from 'lodash';
 import { hashPassword } from 'src/common';
 import { getOrderBy } from 'src/common/utils/prisma';
@@ -12,7 +14,7 @@ import { PaginatedResult, Pagination } from 'src/providers';
 import { RoleService } from '../roles';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { UserResponse } from './interfaces';
-import { filterByNotInForum, filterBySearch } from './utils';
+import { filterByInOrNotInForum, filterBySearch } from './utils';
 
 @Injectable()
 export class UserService {
@@ -24,7 +26,8 @@ export class UserService {
   private readonly logger: Logger = new Logger(UserService.name);
 
   createUser = async (data: CreateUserDto) => {
-    const { fullName, password, username, roles } = data;
+    const { fullName, password, email, roles, dateOfBirth, gender, facultyId } =
+      data;
 
     const rolesData = await this.roleService.checkRoles(roles);
 
@@ -32,14 +35,23 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const existedUsername = await this.findByUsername(email);
+
+    if (isNotEmpty(existedUsername)) {
+      throw new BadRequestException('The username has already been used');
+    }
+
     const user = await this.dbContext.user.create({
       data: {
         fullName,
         password,
-        username,
+        email,
+        dateOfBirth: new Date(dateOfBirth).toISOString(),
+        gender,
+        facultyId,
         roles: {
           create: rolesData.map((role) => ({
-            roleId: role,
+            roleId: role.id,
           })),
         },
       },
@@ -69,16 +81,13 @@ export class UserService {
       where: {
         OR: [
           {
-            username: username,
-          },
-          {
-            studentId: username,
+            email: username,
           },
         ],
       },
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         refreshToken: true,
         fullName: true,
@@ -102,7 +111,7 @@ export class UserService {
       where: { id },
       select: {
         id: true,
-        username: true,
+        email: true,
         password: true,
         refreshToken: true,
         fullName: true,
@@ -124,6 +133,7 @@ export class UserService {
   async getAllUsers({
     search,
     forumId,
+    isInForum,
     order,
     take,
     skip,
@@ -141,14 +151,14 @@ export class UserService {
     let orderBy;
 
     if (order) {
-      orderBy = getOrderBy('createdAt', order);
+      orderBy = getOrderBy<User>({ defaultValue: 'createdAt', order });
     }
 
     const [users, total] = await Promise.all([
       this.dbContext.user.findMany({
         where: {
           ...filterBySearch(search),
-          ...filterByNotInForum(forumId),
+          ...filterByInOrNotInForum(forumId, isInForum),
         },
         orderBy,
         skip,
@@ -156,8 +166,16 @@ export class UserService {
         select: {
           id: true,
           fullName: true,
-          studentId: true,
-          username: true,
+          dateOfBirth: true,
+          email: true,
+          roles: {
+            include: {
+              role: true,
+            },
+          },
+          gender: true,
+          type: true,
+          facultyId: true,
           avatarUrl: true,
           createdAt: true,
           updatedAt: true,
@@ -166,7 +184,7 @@ export class UserService {
       this.dbContext.user.count({
         where: {
           ...filterBySearch(search),
-          ...filterByNotInForum(forumId),
+          ...filterByInOrNotInForum(forumId, isInForum),
         },
       }),
     ]);
@@ -185,16 +203,27 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const existedUser = await this.dbContext.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+      },
+    });
+
+    if (isEmpty(existedUser.id)) {
+      throw new BadRequestException('The user does not exist');
+    }
+
     const updateRoles =
       rolesData.length > 0
         ? {
             deleteMany: {
               roleId: {
-                notIn: rolesData,
+                notIn: rolesData.map(({ id }) => id),
               },
             },
             createMany: {
-              data: rolesData.map((x) => ({ roleId: x })),
+              data: rolesData.map((x) => ({ roleId: x.id })),
               skipDuplicates: true,
             },
           }

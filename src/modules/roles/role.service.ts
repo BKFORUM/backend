@@ -39,7 +39,7 @@ export class RoleService {
     let orderBy: Prisma.RoleOrderByWithRelationInput;
 
     if (order) {
-      orderBy = getOrderBy('createdAt', order);
+      orderBy = getOrderBy<Role>({ defaultValue: 'createdAt', order });
     }
 
     const [total, roles] = await Promise.all([
@@ -223,7 +223,7 @@ export class RoleService {
 
     const existedRoles = await this.dbContext.role.findMany({
       where: {
-        id: {
+        name: {
           in: uniqueRoles,
         },
       },
@@ -233,6 +233,6 @@ export class RoleService {
       return null;
     }
 
-    return uniqueRoles;
+    return existedRoles;
   }
 }

@@ -1,1 +1,1 @@
-export * from './filter-by-conditions.utils';
+export * from './filter-by-conditions.util';
