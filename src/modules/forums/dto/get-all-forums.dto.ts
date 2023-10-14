@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsOptional, IsString, IsInt, Min, IsBoolean } from 'class-validator';
 import { IsOrderQueryParam } from 'src/common/decorator';
 import { GetAllForumsOrderByEnum } from '../forum.enum';
 
@@ -33,6 +33,16 @@ export class GetAllForumsDto {
   @IsInt()
   @Min(1)
   take: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'The status of the forum is pending or not',
+    example: true,
+  })
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true')
+  isPending: boolean;
 
   @ApiPropertyOptional({
     description: `Order by keyword. \n\n  Available values: ${Object.values(

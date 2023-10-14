@@ -15,7 +15,7 @@ import {
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
-import { GetAllForumsDto, ImportUsersToForumDto } from './dto';
+import { AddUsersToForumDto, GetAllForumsDto } from './dto';
 import { ForumResponse } from './interfaces';
 
 @Injectable()
@@ -23,10 +23,17 @@ export class ForumService {
   constructor(private readonly dbContext: PrismaService) {}
 
   async getAllForums(
-    { skip, take, order, search }: GetAllForumsDto,
+    { skip, take, order, search, isPending }: GetAllForumsDto,
     user: RequestUser,
   ): Promise<PaginatedResult<ForumResponse>> {
-    const whereConditions: Prisma.Enumerable<Prisma.ForumWhereInput> = [];
+    const whereConditions: Prisma.Enumerable<Prisma.ForumWhereInput> = [
+      {
+        status: {
+          not: ResourceStatus.DELETED,
+        },
+      },
+    ];
+
     if (search) {
       whereConditions.push({
         OR: [
@@ -34,6 +41,12 @@ export class ForumService {
             name: searchByMode(search),
           },
         ],
+      });
+    }
+
+    if (isPending) {
+      whereConditions.push({
+        status: ResourceStatus.PENDING,
       });
     }
 
@@ -90,9 +103,9 @@ export class ForumService {
     return Pagination.of({ take, skip }, total, forums);
   }
 
-  async importUsersToForum(
+  async addUsersToForum(
     forumId: string,
-    dto: ImportUsersToForumDto,
+    dto: AddUsersToForumDto,
   ): Promise<void> {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id: forumId },
@@ -100,34 +113,38 @@ export class ForumService {
 
     if (forum.status === ResourceStatus.PENDING) {
       throw new BadRequestException(
-        'This forum is pending and needs to be approved to import users',
+        'This forum is pending and needs to be approved to add users',
       );
     }
 
-    await Promise.all(
-      dto.userIds.map(async (userId) => {
-        const user = await this.dbContext.user.findUnique({
-          where: { id: userId },
-        });
+    const user = await this.dbContext.user.findFirst({
+      where: {
+        id: {
+          in: dto.userIds,
+        },
+      },
+    });
 
-        if (!user) {
-          throw new NotFoundException(`The userId: ${forumId} not found`);
-        }
+    if (!user) {
+      throw new NotFoundException(`One of user not found`);
+    }
 
-        const userToForum = await this.dbContext.userToForum.findFirst({
-          where: {
-            forumId,
-            userId,
+    const userToForum = await this.dbContext.userToForum.findFirst({
+      where: {
+        forumId,
+        AND: {
+          userId: {
+            in: dto.userIds,
           },
-        });
+        },
+      },
+    });
 
-        if (userToForum) {
-          throw new BadRequestException(
-            `This userId: ${forumId} belongs to another forum`,
-          );
-        }
-      }),
-    );
+    if (userToForum) {
+      throw new BadRequestException(
+        `The user with id:${userToForum.userId} belongs to another forum`,
+      );
+    }
 
     const data: UserToForum[] = dto.userIds.map((userId) => {
       return {

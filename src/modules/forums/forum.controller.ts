@@ -1,5 +1,5 @@
 import { ReqUser } from '@common/decorator/request-user.dto';
-import { RequestUser } from '@common/types';
+import { RequestUser, UUIDParam } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import {
   Body,
@@ -22,8 +22,7 @@ import { Roles } from 'src/common/decorator';
 import { UserRole } from 'src/common/types/enum';
 import { AccessTokenGuard } from 'src/guard';
 import { PaginatedResult } from 'src/providers';
-import { GetAllForumsDto, ImportUsersToForumDto } from './dto';
-import { ForumQueryParam } from './dto/forum.param';
+import { AddUsersToForumDto, GetAllForumsDto } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
 
@@ -60,11 +59,11 @@ export class ForumController {
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @Post(':id/users')
-  importUsersToForum(
-    @Body() dto: ImportUsersToForumDto,
-    @Param('id') forumId: string,
+  addUsersToForum(
+    @Body() dto: AddUsersToForumDto,
+    @Param() { id }: UUIDParam,
   ): Promise<void> {
-    return this.forumService.importUsersToForum(forumId, dto);
+    return this.forumService.addUsersToForum(id, dto);
   }
 
   @ApiOperation({
@@ -73,7 +72,7 @@ export class ForumController {
   @Get(':id/posts')
   @HttpCode(HttpStatus.OK)
   async getPostsOfForum(
-    @Param() { id }: ForumQueryParam,
+    @Param() { id }: UUIDParam,
     @Query() query: GetAllPostsDto,
   ) {
     return await this.forumService.getPostsOfForum(id, query);
