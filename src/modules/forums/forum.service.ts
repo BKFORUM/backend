@@ -1,3 +1,5 @@
+import { RequestUser } from '@common/types';
+import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import { Injectable } from '@nestjs/common';
 import { Forum, Prisma, ResourceStatus } from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
@@ -5,8 +7,7 @@ import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
 import { GetAllForumsDto } from './dto';
 import { ForumResponse } from './interfaces';
-import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
-import { RequestUser } from '@common/types';
+import { orderBy } from 'lodash';
 
 @Injectable()
 export class ForumService {
@@ -97,7 +98,7 @@ export class ForumService {
     id: string,
     { skip, take, order, search }: GetAllPostsDto,
   ) {
-    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
+    const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
         forumId: id,
       },

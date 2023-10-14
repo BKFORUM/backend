@@ -13,4 +13,4 @@ RUN npm run build
 
 EXPOSE 80
 
-CMD ["node", "/usr/src/app/dist/main.js"]
+CMD ["node", "/usr/src/app/dist/src/main.js"]

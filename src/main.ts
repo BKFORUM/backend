@@ -32,7 +32,7 @@ async function bootstrap() {
   );
 
   SwaggerModule.setup('api', app, document, {
-    customSiteTitle: 'Backend Generator',
+    customSiteTitle: 'Bk Forum',
     customfavIcon: 'https://avatars.githubusercontent.com/u/6936373?s=200&v=4',
     customJs: [
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
