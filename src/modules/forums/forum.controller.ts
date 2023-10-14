@@ -16,11 +16,9 @@ import { GetAllForumsDto } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
 import { AccessTokenGuard } from 'src/guard';
-import { ForumQueryParam } from './dto/forum.param';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
-import { query } from 'express';
 import { ReqUser } from '@common/decorator/request-user.dto';
-import { RequestUser } from '@common/types';
+import { RequestUser, UUIDParam } from '@common/types';
 
 @ApiBearerAuth()
 @ApiTags('Forum')
@@ -51,7 +49,7 @@ export class ForumController {
   @Get(':id/posts')
   @HttpCode(HttpStatus.OK)
   async getPostsOfForum(
-    @Param() { id }: ForumQueryParam,
+    @Param() { id }: UUIDParam,
     @Query() query: GetAllPostsDto,
   ) {
     return await this.forumService.getPostsOfForum(id, query);

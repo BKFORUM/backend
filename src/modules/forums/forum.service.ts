@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Forum, Prisma } from '@prisma/client';
+import { Forum, Prisma, ResourceStatus } from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -13,10 +13,17 @@ export class ForumService {
   constructor(private readonly dbContext: PrismaService) {}
 
   async getAllForums(
-    { skip, take, order, search }: GetAllForumsDto,
+    { skip, take, order, search, isPending }: GetAllForumsDto,
     user: RequestUser,
   ): Promise<PaginatedResult<ForumResponse>> {
-    let whereConditions: Prisma.Enumerable<Prisma.ForumWhereInput> = [];
+    let whereConditions: Prisma.Enumerable<Prisma.ForumWhereInput> = [
+      {
+        status: {
+          not: ResourceStatus.DELETED,
+        },
+      },
+    ];
+
     if (search) {
       whereConditions.push({
         OR: [
@@ -24,6 +31,12 @@ export class ForumService {
             name: searchByMode(search),
           },
         ],
+      });
+    }
+
+    if (isPending) {
+      whereConditions.push({
+        status: ResourceStatus.PENDING,
       });
     }
 
