@@ -1,13 +1,22 @@
 import { RequestUser } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
-import { Injectable } from '@nestjs/common';
-import { Forum, Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Forum,
+  GroupUserType,
+  Prisma,
+  ResourceStatus,
+  UserToForum,
+} from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
-import { GetAllForumsDto } from './dto';
+import { GetAllForumsDto, ImportUsersToForumDto } from './dto';
 import { ForumResponse } from './interfaces';
-import { orderBy } from 'lodash';
 
 @Injectable()
 export class ForumService {
@@ -79,6 +88,58 @@ export class ForumService {
     ]);
 
     return Pagination.of({ take, skip }, total, forums);
+  }
+
+  async importUsersToForum(
+    forumId: string,
+    dto: ImportUsersToForumDto,
+  ): Promise<void> {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: { id: forumId },
+    });
+
+    if (forum.status === ResourceStatus.PENDING) {
+      throw new BadRequestException(
+        'This forum is pending and needs to be approved to import users',
+      );
+    }
+
+    await Promise.all(
+      dto.userIds.map(async (userId) => {
+        const user = await this.dbContext.user.findUnique({
+          where: { id: userId },
+        });
+
+        if (!user) {
+          throw new NotFoundException(`The userId: ${forumId} not found`);
+        }
+
+        const userToForum = await this.dbContext.userToForum.findFirst({
+          where: {
+            forumId,
+            userId,
+          },
+        });
+
+        if (userToForum) {
+          throw new BadRequestException(
+            `This userId: ${forumId} belongs to another forum`,
+          );
+        }
+      }),
+    );
+
+    const data: UserToForum[] = dto.userIds.map((userId) => {
+      return {
+        forumId: forumId,
+        userId,
+        userType: GroupUserType.MEMBER,
+      };
+    });
+
+    await this.dbContext.userToForum.createMany({
+      data,
+    });
   }
 
   async getPostsOfForum(
