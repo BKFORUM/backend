@@ -237,7 +237,6 @@ model Topic {
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   name        String   @db.VarChar(50)
   displayName String?  @map("display_name") @db.VarChar(50)
-  description String
 
   forums ForumToTopic[]
 
