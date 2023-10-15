@@ -142,6 +142,7 @@ export class ForumService {
       data: {
         name,
         modId: moderatorId,
+        status: isAdmin ? ResourceStatus.ACTIVE : ResourceStatus.PENDING,
         users: {
           create: {
             userType: GroupUserType.MODERATOR,
@@ -149,6 +150,7 @@ export class ForumService {
           },
           createMany: {
             data: userCreateMany,
+            skipDuplicates: true,
           },
         },
         topics: !isHomeRoom
