@@ -1,3 +1,6 @@
+import { ReqUser } from '@common/decorator/request-user.dto';
+import { RequestUser, UUIDParam } from '@common/types';
+import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import {
   Body,
   Controller,
@@ -5,20 +8,23 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Roles } from 'src/common/decorator';
 import { UserRole } from 'src/common/types/enum';
+import { AccessTokenGuard } from 'src/guard';
 import { PaginatedResult } from 'src/providers';
-import { GetAllForumsDto } from './dto';
+import { AddUsersToForumDto, GetAllForumsDto } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
-import { AccessTokenGuard } from 'src/guard';
-import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
-import { ReqUser } from '@common/decorator/request-user.dto';
-import { RequestUser, UUIDParam } from '@common/types';
 
 @ApiBearerAuth()
 @ApiTags('Forum')
@@ -34,13 +40,30 @@ export class ForumController {
     description: 'Get all forums only by ADMIN',
   })
   @Roles(UserRole.ADMIN)
-  @Get()
   @HttpCode(HttpStatus.OK)
+  @Get()
   async getAllForums(
     @Query() query: GetAllForumsDto,
     @ReqUser() user: RequestUser,
   ): Promise<PaginatedResult<ForumResponse>> {
     return await this.forumService.getAllForums(query, user);
+  }
+
+  @ApiOperation({
+    description: 'Import users to forum',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @Post(':id/users')
+  addUsersToForum(
+    @Body() dto: AddUsersToForumDto,
+    @Param() { id }: UUIDParam,
+  ): Promise<void> {
+    return this.forumService.addUsersToForum(id, dto);
   }
 
   @ApiOperation({

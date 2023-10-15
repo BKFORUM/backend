@@ -1,9 +1,10 @@
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -30,6 +31,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
 
   SwaggerModule.setup('api', app, document, {
     customSiteTitle: 'Bk Forum',
