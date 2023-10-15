@@ -34,11 +34,10 @@ export class ForumService {
     { skip, take, order, search, isPending }: GetAllForumsDto,
     user: RequestUser,
   ): Promise<PaginatedResult<ForumResponse>> {
+    console.log(isPending);
     const whereConditions: Prisma.Enumerable<Prisma.ForumWhereInput> = [
       {
-        status: {
-          not: ResourceStatus.DELETED,
-        },
+        status: isPending ? ResourceStatus.PENDING : ResourceStatus.ACTIVE,
       },
     ];
 
@@ -49,13 +48,6 @@ export class ForumService {
             name: searchByMode(search),
           },
         ],
-      });
-    }
-
-    console.log(isPending);
-    if (isPending) {
-      whereConditions.push({
-        status: ResourceStatus.PENDING,
       });
     }
 
@@ -110,6 +102,16 @@ export class ForumService {
               type: true,
             },
           },
+          topics: {
+            select: {
+              topic: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
           _count: {
             select: {
               users: true,
@@ -119,7 +121,16 @@ export class ForumService {
       }),
     ]);
 
-    return Pagination.of({ take, skip }, total, forums);
+    return Pagination.of(
+      { take, skip },
+      total,
+      forums.map((forum) => {
+        return {
+          ...forum,
+          topics: forum.topics.map(({ topic }) => topic),
+        };
+      }),
+    );
   }
 
   async createForum(body: CreateForumDto, user: RequestUser) {

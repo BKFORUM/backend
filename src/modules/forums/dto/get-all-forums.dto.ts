@@ -39,7 +39,7 @@ export class GetAllForumsDto {
     example: false,
   })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => value === 'true')
   @IsBoolean()
   isPending: boolean;
 
