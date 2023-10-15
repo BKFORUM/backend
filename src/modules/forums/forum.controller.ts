@@ -53,7 +53,7 @@ export class ForumController {
     description: 'Create a forum',
   })
   @HttpCode(HttpStatus.CREATED)
-  @Get()
+  @Post()
   async createForum(
     @Body() body: CreateForumDto,
     @ReqUser() user: RequestUser,
