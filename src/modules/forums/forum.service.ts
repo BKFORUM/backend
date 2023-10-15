@@ -1,4 +1,4 @@
-import { RequestUser } from '@common/types';
+import { RequestUser, UserRole } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import {
   BadRequestException,
@@ -7,20 +7,28 @@ import {
 } from '@nestjs/common';
 import {
   Forum,
+  ForumType,
   GroupUserType,
   Prisma,
   ResourceStatus,
   UserToForum,
+  UserType,
 } from '@prisma/client';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
-import { AddUsersToForumDto, GetAllForumsDto } from './dto';
+import { AddUsersToForumDto, CreateForumDto, GetAllForumsDto } from './dto';
 import { ForumResponse } from './interfaces';
+import { UserService } from '@modules/user';
+import { TopicService } from '@modules/topic';
 
 @Injectable()
 export class ForumService {
-  constructor(private readonly dbContext: PrismaService) {}
+  constructor(
+    private readonly dbContext: PrismaService,
+    private readonly userService: UserService,
+    private readonly topicService: TopicService,
+  ) {}
 
   async getAllForums(
     { skip, take, order, search, isPending }: GetAllForumsDto,
@@ -103,6 +111,57 @@ export class ForumService {
     return Pagination.of({ take, skip }, total, forums);
   }
 
+  async createForum(body: CreateForumDto, user: RequestUser) {
+    const { moderatorId, name, type, topicIds, userIds } = body;
+    const isAdmin = user.roles.includes(UserRole.ADMIN);
+    const isHomeRoom = type === ForumType.HOMEROOM;
+    const isAbleCreateForumType = (isAdmin && isHomeRoom) || !isHomeRoom;
+
+    if (!isAbleCreateForumType) {
+      throw new BadRequestException(
+        'You do not have the permission to create this type of forum',
+      );
+    }
+
+    await this.userService.findById(moderatorId);
+
+    await this.userService.validateUserIds(userIds);
+
+    await this.topicService.validateTopicIds(topicIds);
+
+    const userCreateMany = userIds.map((userId) => ({
+      userType: GroupUserType.MEMBER,
+      userId,
+    }));
+
+    const topicCreateMany = topicIds.map((topicId) => ({
+      topicId,
+    }));
+
+    await this.dbContext.forum.create({
+      data: {
+        name,
+        modId: moderatorId,
+        users: {
+          create: {
+            userType: GroupUserType.MODERATOR,
+            userId: moderatorId,
+          },
+          createMany: {
+            data: userCreateMany,
+          },
+        },
+        topics: !isHomeRoom
+          ? {
+              createMany: {
+                data: topicCreateMany,
+              },
+            }
+          : undefined,
+      },
+    });
+  }
+
   async addUsersToForum(
     forumId: string,
     dto: AddUsersToForumDto,
@@ -117,17 +176,7 @@ export class ForumService {
       );
     }
 
-    const user = await this.dbContext.user.findFirst({
-      where: {
-        id: {
-          in: dto.userIds,
-        },
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`One of user not found`);
-    }
+    await this.userService.validateUserIds(dto.userIds);
 
     const userToForum = await this.dbContext.userToForum.findFirst({
       where: {

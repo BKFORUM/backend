@@ -107,7 +107,7 @@ export class UserService {
   };
 
   findById = async (id: string) => {
-    const user = this.dbContext.user.findUnique({
+    const user = this.dbContext.user.findUniqueOrThrow({
       where: { id },
       select: {
         id: true,
@@ -243,4 +243,18 @@ export class UserService {
 
     this.logger.log('Updated the user records', { user });
   };
+
+  async validateUserIds(userIds: string[]) {
+    const users = await this.dbContext.user.findMany({
+      where: {
+        id: {
+          in: userIds,
+        },
+      },
+    });
+
+    if (users.length !== userIds.length) {
+      throw new NotFoundException(`One or more users not found`);
+    }
+  }
 }
