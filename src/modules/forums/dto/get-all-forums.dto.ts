@@ -36,12 +36,11 @@ export class GetAllForumsDto {
 
   @ApiPropertyOptional({
     description: 'The status of the forum is pending or not',
-    example: true,
+    example: false,
   })
   @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
-  @Transform(({ value }) => value === 'true')
   isPending: boolean;
 
   @ApiPropertyOptional({

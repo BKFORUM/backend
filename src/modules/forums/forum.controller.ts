@@ -16,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from 'src/common/decorator';
@@ -52,6 +53,7 @@ export class ForumController {
   @ApiOperation({
     description: 'Create a forum',
   })
+  @ApiResponse({ status: HttpStatus.CREATED })
   @HttpCode(HttpStatus.CREATED)
   @Post()
   async createForum(

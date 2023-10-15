@@ -52,6 +52,7 @@ export class ForumService {
       });
     }
 
+    console.log(isPending);
     if (isPending) {
       whereConditions.push({
         status: ResourceStatus.PENDING,
@@ -88,17 +89,27 @@ export class ForumService {
         take,
         select: {
           id: true,
+          type: true,
+          name: true,
+          status: true,
           createdAt: true,
           updatedAt: true,
           moderator: {
             select: {
               id: true,
               fullName: true,
+              gender: true,
+              dateOfBirth: true,
+              avatarUrl: true,
+              faculty: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              type: true,
             },
           },
-          type: true,
-          name: true,
-          status: true,
           _count: {
             select: {
               users: true,
@@ -125,18 +136,26 @@ export class ForumService {
 
     await this.userService.findById(moderatorId);
 
-    await this.userService.validateUserIds(userIds);
+    if (userIds && userIds.length > 0) {
+      await this.userService.validateUserIds(userIds);
+    }
 
-    await this.topicService.validateTopicIds(topicIds);
+    if (topicIds && topicIds.length > 0) {
+      await this.topicService.validateTopicIds(topicIds);
+    }
 
-    const userCreateMany = userIds.map((userId) => ({
-      userType: GroupUserType.MEMBER,
-      userId,
-    }));
+    const userCreateMany = userIds
+      ? userIds.map((userId) => ({
+          userType: GroupUserType.MEMBER,
+          userId,
+        }))
+      : undefined;
 
-    const topicCreateMany = topicIds.map((topicId) => ({
-      topicId,
-    }));
+    const topicCreateMany = topicIds
+      ? topicIds.map((topicId) => ({
+          topicId,
+        }))
+      : undefined;
 
     await this.dbContext.forum.create({
       data: {
