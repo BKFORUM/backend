@@ -22,7 +22,7 @@ import { Roles } from 'src/common/decorator';
 import { UserRole } from 'src/common/types/enum';
 import { AccessTokenGuard } from 'src/guard';
 import { PaginatedResult } from 'src/providers';
-import { AddUsersToForumDto, GetAllForumsDto } from './dto';
+import { AddUsersToForumDto, CreateForumDto, GetAllForumsDto } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
 
@@ -47,6 +47,18 @@ export class ForumController {
     @ReqUser() user: RequestUser,
   ): Promise<PaginatedResult<ForumResponse>> {
     return await this.forumService.getAllForums(query, user);
+  }
+
+  @ApiOperation({
+    description: 'Create a forum',
+  })
+  @HttpCode(HttpStatus.CREATED)
+  @Get()
+  async createForum(
+    @Body() body: CreateForumDto,
+    @ReqUser() user: RequestUser,
+  ): Promise<void> {
+    return await this.forumService.createForum(body, user);
   }
 
   @ApiOperation({
