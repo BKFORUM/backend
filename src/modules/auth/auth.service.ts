@@ -9,6 +9,9 @@ import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '../user/dto';
 import { compareHash, hashPassword } from 'src/common';
 import { getUsersPayload } from './dto/getUserPayload.dto';
+import { PrismaService } from 'src/database/services';
+import { MailService } from '@modules/mail/mail.service';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +19,8 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private dbContext: PrismaService,
+    private mailService: MailService,
   ) {}
 
   login = async (username: string, password: string) => {
@@ -117,5 +122,66 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async sendForgotPasswordEmail(email: string) {
+    const user = await this.userService.findByUsername(email);
+    if (!user) {
+      throw new BadRequestException("The email doesn't exist in the system");
+    }
+
+    const existedToken = await this.dbContext.verificationToken.findFirst({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    const newToken = {
+      token: await hashPassword(new Date().toISOString()),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      userId: user.id,
+    };
+
+    if (!existedToken) {
+      await this.dbContext.verificationToken.create({
+        data: newToken,
+      });
+    } else {
+      await this.dbContext.verificationToken.update({
+        where: {
+          id: existedToken.id,
+        },
+        data: newToken,
+      });
+    }
+
+    await this.mailService.sendResetPasswordToken(user.email, newToken.token);
+  }
+
+  async resetPassword(body: ResetPasswordDto) {
+    const { email, token, password } = body;
+    const user = await this.userService.findByUsername(email);
+    if (!user) {
+      throw new BadRequestException("The email doesn't exist in the system");
+    }
+
+    const resetToken = await this.dbContext.verificationToken.findFirst({
+      where: {
+        token,
+      },
+    });
+
+    if (!resetToken || Date.now() > resetToken.expiresAt.getTime()) {
+      throw new BadRequestException('The token is invalid');
+    }
+
+    await this.dbContext.user.update({
+      where: {
+        email,
+      },
+      data: {
+        password: await hashPassword(password),
+      },
+    });
   }
 }

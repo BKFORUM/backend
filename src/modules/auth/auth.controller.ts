@@ -15,6 +15,8 @@ import { LoginCredentialDto } from './dto';
 import { AccessTokenGuard } from 'src/guard/accessToken.guard';
 import { RefreshTokenGuard } from 'src/guard/refreshToken.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -29,6 +31,17 @@ export class AuthController {
   login(@Body() data: LoginCredentialDto) {
     const { email, password } = data;
     return this.authService.login(email, password);
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() data: ForgotPasswordDto) {
+    const { email } = data;
+    return this.authService.sendForgotPasswordEmail(email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    return await this.authService.resetPassword(body);
   }
 
   @ApiBearerAuth()
