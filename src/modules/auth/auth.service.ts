@@ -174,14 +174,18 @@ export class AuthService {
     if (!resetToken || Date.now() > resetToken.expiresAt.getTime()) {
       throw new BadRequestException('The token is invalid');
     }
-
-    await this.dbContext.user.update({
-      where: {
-        email,
-      },
-      data: {
-        password: await hashPassword(password),
-      },
+    await this.dbContext.$transaction(async (trx) => {
+      await trx.user.update({
+        where: {
+          email,
+        },
+        data: {
+          password: await hashPassword(password),
+        },
+      });
+      await trx.verificationToken.delete({
+        where: { id: resetToken.id },
+      });
     });
   }
 }
