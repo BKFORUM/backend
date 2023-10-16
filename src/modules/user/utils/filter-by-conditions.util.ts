@@ -39,6 +39,12 @@ export function filterBySearch(search: string): Prisma.UserWhereInput {
         {
           email: searchByMode(search),
         },
+        {
+          phoneNumber: searchByMode(search),
+        },
+        {
+          address: searchByMode(search),
+        },
       ],
     };
   }

@@ -17,6 +17,10 @@ services:
       POSTGRES_PASSWORD: admin
     volumes:
       - data:/var/lib/postgresql/data
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
 
 volumes:
   data:
