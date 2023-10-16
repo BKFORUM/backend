@@ -45,6 +45,8 @@ model User {
   email        String   @map("email") @db.VarChar(255)
   dateOfBirth  DateTime @map("date_of_birth") @db.Date
   gender       Gender
+  phoneNumber  String?  @map("phone_number") @db.VarChar(15)
+  address      String?  @db.VarChar(255)
   password     String   @map("password")
   refreshToken String?  @map("refresh_token")
   avatarUrl    String?  @map("avatar_url") @db.VarChar(255)

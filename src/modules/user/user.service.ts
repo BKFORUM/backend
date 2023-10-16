@@ -133,6 +133,7 @@ export class UserService {
   async getAllUsers({
     search,
     forumId,
+    type,
     isInForum,
     order,
     take,
@@ -157,6 +158,7 @@ export class UserService {
     const [users, total] = await Promise.all([
       this.dbContext.user.findMany({
         where: {
+          type,
           ...filterBySearch(search),
           ...filterByInOrNotInForum(forumId, isInForum),
         },
@@ -168,11 +170,8 @@ export class UserService {
           fullName: true,
           dateOfBirth: true,
           email: true,
-          roles: {
-            include: {
-              role: true,
-            },
-          },
+          address: true,
+          phoneNumber: true,
           gender: true,
           type: true,
           facultyId: true,
@@ -183,6 +182,7 @@ export class UserService {
       }),
       this.dbContext.user.count({
         where: {
+          type,
           ...filterBySearch(search),
           ...filterByInOrNotInForum(forumId, isInForum),
         },

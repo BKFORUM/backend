@@ -1,9 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -75,4 +76,11 @@ export class GetUsersQueryDto {
   @Transform(({ value }) => value === 'true')
   @IsOptional()
   isInForum?: boolean;
+
+  @ApiPropertyOptional({
+    enum: UserType,
+  })
+  @IsOptional()
+  @IsEnum(UserType)
+  type?: UserType;
 }
