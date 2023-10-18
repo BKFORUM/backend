@@ -156,10 +156,13 @@ export class ForumService {
     }
 
     const userCreateMany = userIds
-      ? userIds.map((userId) => ({
-          userType: GroupUserType.MEMBER,
-          userId,
-        }))
+      ? {
+          data: userIds.map((userId) => ({
+            userType: GroupUserType.MEMBER,
+            userId,
+          })),
+          skipDuplicates: true,
+        }
       : undefined;
 
     const topicCreateMany = topicIds
@@ -178,10 +181,7 @@ export class ForumService {
             userType: GroupUserType.MODERATOR,
             userId: moderatorId,
           },
-          createMany: {
-            data: userCreateMany,
-            skipDuplicates: true,
-          },
+          createMany: userCreateMany,
         },
         topics: !isHomeRoom
           ? {
