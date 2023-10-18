@@ -6,6 +6,7 @@ import {
   IsArray,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsUUID,
   ValidateIf,
@@ -58,6 +59,7 @@ export class CreateForumDto {
       '0288b413-c607-43d8-a1d4-c653d2ecb768',
     ],
   })
+  @IsOptional()
   @IsUUID('4', { each: true })
   @IsArray()
   @Transform(({ value }) => uniq(value))
