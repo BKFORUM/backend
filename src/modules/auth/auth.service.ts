@@ -167,7 +167,14 @@ export class AuthService {
 
     const resetToken = await this.dbContext.verificationToken.findFirst({
       where: {
-        token,
+        AND: [
+          { token },
+          {
+            user: {
+              email: email,
+            },
+          },
+        ],
       },
     });
 
