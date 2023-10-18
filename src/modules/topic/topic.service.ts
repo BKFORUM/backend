@@ -29,7 +29,7 @@ export class TopicService {
   }
 
   async validateTopicIds(topicIds: string[]) {
-    const topics = await this.dbContext.user.findMany({
+    const topics = await this.dbContext.topic.findMany({
       where: {
         id: {
           in: topicIds,
@@ -38,7 +38,7 @@ export class TopicService {
     });
 
     if (topics.length !== topicIds.length) {
-      throw new NotFoundException(`One or more users not found`);
+      throw new NotFoundException(`One or more topics not found`);
     }
   }
 }
