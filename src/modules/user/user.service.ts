@@ -7,7 +7,7 @@ import {
 import { User } from '@prisma/client';
 import { isNotEmpty } from 'class-validator';
 import { isEmpty } from 'lodash';
-import { hashPassword } from 'src/common';
+import { RequestUser, hashPassword } from 'src/common';
 import { getOrderBy } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -256,5 +256,56 @@ export class UserService {
     if (users.length !== userIds.length) {
       throw new NotFoundException(`One or more users not found`);
     }
+  }
+
+  async getProfile({ id }: RequestUser) {
+    const currentUser = await this.dbContext.user.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        dateOfBirth: true,
+        email: true,
+        address: true,
+        phoneNumber: true,
+        gender: true,
+        type: true,
+        faculty: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        forums: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+          },
+        },
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      ...currentUser,
+      roles: currentUser.roles.map((role) => {
+        return role.role;
+      }),
+    };
   }
 }

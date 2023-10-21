@@ -10,6 +10,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { GetUsersQueryDto } from './dto';
 import { UserService } from './user.service';
+import { ReqUser } from '@common/decorator/request-user.dto';
+import { RequestUser } from '@common/types';
 @ApiTags('User')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
@@ -24,5 +26,14 @@ export class UserController {
   @Get()
   async getAllUsers(@Query() query: GetUsersQueryDto) {
     return this.userService.getAllUsers(query);
+  }
+
+  @ApiOperation({
+    description: 'get current user',
+  })
+  @Get('profile')
+  @HttpCode(HttpStatus.OK)
+  async getProfile(@ReqUser() user: RequestUser) {
+    return this.userService.getProfile(user);
   }
 }
