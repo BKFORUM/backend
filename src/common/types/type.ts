@@ -1,3 +1,6 @@
+import { PrismaClient } from '@prisma/client';
+import { UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
+
 export type JwtPayload = {
   sub: string;
   username: string;
@@ -8,3 +11,25 @@ export type RequestUser = {
   fullName: string;
   roles: string[];
 };
+
+export type CloudinaryResponse = UploadApiResponse | UploadApiErrorResponse;
+
+export type Models = keyof Omit<
+  PrismaClient,
+  | 'disconnect'
+  | 'connect'
+  | 'executeRaw'
+  | 'queryRaw'
+  | 'transaction'
+  | 'on'
+  | '$disconnect'
+  | '$connect'
+  | '$executeRaw'
+  | '$queryRaw'
+  | '$transaction'
+  | '$on'
+  | '$executeRawUnsafe'
+  | '$queryRawUnsafe'
+  | '$use'
+  | '$extends'
+>;

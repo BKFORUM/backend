@@ -61,6 +61,7 @@ model User {
   comments    Comment[]
   likes       Like[]
   tokens      VerificationToken[]
+  documents   PostDocument[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -216,6 +217,7 @@ model Post {
   forum    Forum     @relation(fields: [forumId], references: [id], onDelete: Cascade)
   comments Comment[]
   likes    Like[]
+  documents PostDocument[]
 
   @@map("post")
 }
@@ -276,4 +278,20 @@ model ForumToTopic {
   @@index([topicId])
   @@index([forumId])
   @@map("forum_to_topic")
+}
+
+model PostDocument {
+  id        String   @id(map: "pk_post_document") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String   @map("user_id") @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  fileUrl   String   @map("file_url")
+  fileName  String   @map("file_name") 
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_document")
+
 }

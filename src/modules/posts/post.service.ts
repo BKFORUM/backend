@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
 import { GetAllPostsDto } from './dto/get-all-posts.dto';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -9,11 +14,16 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { RequestUser } from '@common/types';
 import { isEmpty } from 'class-validator';
 import { UserRole } from '@common/types/enum';
+import { CloudinaryService } from '@modules/cloudinary';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name);
-  constructor(private dbContext: PrismaService) {}
+  constructor(
+    private dbContext: PrismaService,
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
   async getAllPosts(
     query: GetAllPostsDto,
@@ -88,7 +98,43 @@ export class PostService {
     return Pagination.of({ take, skip }, total, posts);
   }
 
-  async createPost(body: CreatePostDto, { id }: RequestUser) {
+  async getPostById(id: string) {
+    const post = await this.dbContext.post.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        documents: true,
+        comments: true,
+        likes: true,
+        title: true,
+        content: true,
+        user: {
+          select: {
+            email: true,
+            fullName: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    return {
+      ...post,
+      documents: post.documents.map((document) => ({
+        id: document.id,
+        fileName: document.fileName.split('_')[0],
+        fileUrl: document.fileUrl,
+      })),
+    };
+  }
+
+  async createPost(
+    body: CreatePostDto,
+    { id }: RequestUser,
+    documents: Express.Multer.File[],
+  ) {
     const { forumId, content, title } = body;
     const forum = await this.dbContext.forum.findUnique({
       where: { id: forumId },
@@ -112,6 +158,26 @@ export class PostService {
       throw new BadRequestException('The user is not in the forum');
     }
 
+    const uploadedDocuments =
+      documents && (await this.cloudinaryService.uploadImages(documents));
+
+    console.log(uploadedDocuments);
+
+    const documentsCreate: Prisma.PostDocumentCreateWithoutPostInput[] =
+      uploadedDocuments.length > 0
+        ? uploadedDocuments.map((document) => {
+            return {
+              fileName: `${document.original_filename}_${uuid()}`,
+              fileUrl: document.url,
+              user: {
+                connect: {
+                  id,
+                },
+              },
+            };
+          })
+        : undefined;
+
     const post = await this.dbContext.post.create({
       data: {
         content,
@@ -122,6 +188,9 @@ export class PostService {
           forumUser.userType === GroupUserType.MODERATOR
             ? ResourceStatus.ACTIVE
             : ResourceStatus.PENDING,
+        documents: {
+          create: documentsCreate,
+        },
       },
     });
 
