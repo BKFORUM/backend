@@ -11,6 +11,7 @@ import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { Pagination } from 'src/providers';
 import { map, omit, pick } from 'lodash';
 import _ from 'lodash';
+import { UserRole } from '@common/types';
 
 @Injectable()
 export class RoleService {
@@ -211,8 +212,14 @@ export class RoleService {
   }
 
   async checkRoles(roles: string[]) {
-    if (!roles) {
-      return [];
+    if (!roles || roles.length === 0) {
+      const userRole = await this.dbContext.role.findMany({
+        where: {
+          name: 'USER',
+        },
+      });
+
+      return userRole;
     }
 
     const uniqueRoles = [...new Set(roles)];

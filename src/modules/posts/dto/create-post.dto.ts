@@ -20,14 +20,6 @@ export class CreatePostDto {
   forumId: string;
 
   @ApiProperty({
-    description: 'Title of the post',
-    example: 'Test title',
-  })
-  @IsNotEmpty()
-  @IsString()
-  title: string;
-
-  @ApiProperty({
     description: 'Content of the post',
     example: 'Test content',
   })

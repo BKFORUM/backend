@@ -8,6 +8,8 @@ import { RoleModule } from './modules/roles';
 import { ForumModule } from './modules/forums';
 import { PostModule } from './modules/posts';
 import { TopicModule } from '@modules/topic';
+import { NotificationGateway } from './notification/notification.gateway';
+import { FacultyModule } from './modules/faculty/faculty.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,8 +21,9 @@ import { TopicModule } from '@modules/topic';
     ForumModule,
     PostModule,
     TopicModule,
+    FacultyModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, NotificationGateway],
 })
 export class AppModule {}

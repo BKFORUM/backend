@@ -47,7 +47,6 @@ export class PostController {
     @ReqUser() user: RequestUser,
     @UploadedFiles() documents: Express.Multer.File[],
   ) {
-    console.log(documents);
     return this.postService.createPost(body, user, documents);
   }
 

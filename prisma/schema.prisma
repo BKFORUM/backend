@@ -210,7 +210,6 @@ model Post {
   userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
   forumId   String         @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
   status    ResourceStatus @default(PENDING)
-  title     String         @db.VarChar(100)
   content   String         @db.Text
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)

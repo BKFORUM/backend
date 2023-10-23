@@ -3,9 +3,11 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { DatabaseModule } from 'src/database';
 import { RoleModule } from '../roles';
+import { FacultyModule } from '@modules/faculty/faculty.module';
+import { PostModule } from '@modules/posts';
 
 @Module({
-  imports: [DatabaseModule, RoleModule],
+  imports: [DatabaseModule, RoleModule, FacultyModule, PostModule],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

@@ -251,14 +251,7 @@ export class ForumService {
     ];
     if (search) {
       whereConditions.push({
-        OR: [
-          {
-            title: searchByMode(search),
-          },
-          {
-            content: searchByMode(search),
-          },
-        ],
+        content: searchByMode(search),
       });
     }
 
@@ -289,10 +282,9 @@ export class ForumService {
           id: true,
           createdAt: true,
           updatedAt: true,
-
-          title: true,
           content: true,
           status: true,
+          documents: true,
         },
       }),
     ]);

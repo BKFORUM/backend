@@ -4,10 +4,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User, UserType } from '@prisma/client';
 import { isNotEmpty } from 'class-validator';
 import { isEmpty } from 'lodash';
-import { RequestUser, hashPassword } from 'src/common';
+import {
+  RequestUser,
+  getDay,
+  getStudentAvatarUrl,
+  hashPassword,
+} from 'src/common';
 import { getOrderBy } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -15,19 +20,36 @@ import { RoleService } from '../roles';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { UserResponse } from './interfaces';
 import { filterByInOrNotInForum, filterBySearch } from './utils';
+import { FacultyService } from '@modules/faculty';
 
 @Injectable()
 export class UserService {
   constructor(
     private dbContext: PrismaService,
     private roleService: RoleService,
+    private facultyService: FacultyService,
   ) {}
 
   private readonly logger: Logger = new Logger(UserService.name);
 
+  async generatePassword(dateOfBirth: Date) {
+    const password = getDay(dateOfBirth).split('-').join('');
+    return await hashPassword(password);
+  }
+
   createUser = async (data: CreateUserDto) => {
-    const { fullName, password, email, roles, dateOfBirth, gender, facultyId } =
-      data;
+    const {
+      fullName,
+      password,
+      email,
+      roles,
+      dateOfBirth,
+      gender,
+      facultyId,
+      type,
+      address,
+      phoneNumber,
+    } = data;
 
     const rolesData = await this.roleService.checkRoles(roles);
 
@@ -35,7 +57,13 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const avatarUrl =
+      type === UserType.STUDENT ? getStudentAvatarUrl(email) : null;
     const existedUsername = await this.findByUsername(email);
+
+    const hashPassword = password
+      ? password
+      : await this.generatePassword(dateOfBirth);
 
     if (isNotEmpty(existedUsername)) {
       throw new BadRequestException('The username has already been used');
@@ -44,11 +72,15 @@ export class UserService {
     const user = await this.dbContext.user.create({
       data: {
         fullName,
-        password,
         email,
+        password: hashPassword,
         dateOfBirth: new Date(dateOfBirth).toISOString(),
         gender,
         facultyId,
+        type,
+        avatarUrl,
+        phoneNumber,
+        address,
         roles: {
           create: rolesData.map((role) => ({
             roleId: role.id,
@@ -77,14 +109,11 @@ export class UserService {
   };
 
   findByUsername = async (username: string) => {
-    const user = this.dbContext.user.findFirst({
+    const user = this.dbContext.user.findUnique({
       where: {
-        OR: [
-          {
-            email: username,
-          },
-        ],
+        email: username,
       },
+
       select: {
         id: true,
         email: true,
@@ -124,6 +153,18 @@ export class UserService {
             },
           },
         },
+        address: true,
+        type: true,
+        avatarUrl: true,
+        dateOfBirth: true,
+        facultyId: true,
+        faculty: {
+          select: {
+            name: true,
+          },
+        },
+        gender: true,
+        phoneNumber: true,
       },
     });
 
@@ -193,7 +234,17 @@ export class UserService {
   }
 
   updateUser = async (id: string, data: UpdateUserDto) => {
-    const { roles, fullName, password, refreshToken } = data;
+    const {
+      roles,
+      fullName,
+      password,
+      refreshToken,
+      address,
+      dateOfBirth,
+      gender,
+      phoneNumber,
+      facultyId,
+    } = data;
 
     const rolesData = await this.roleService.checkRoles(roles);
 
@@ -209,6 +260,10 @@ export class UserService {
         id: true,
       },
     });
+
+    if (facultyId) {
+      await this.facultyService.getFacultyById(id);
+    }
 
     if (isEmpty(existedUser.id)) {
       throw new BadRequestException('The user does not exist');
@@ -235,6 +290,11 @@ export class UserService {
       },
       data: {
         fullName,
+        address,
+        dateOfBirth,
+        gender,
+        phoneNumber,
+        facultyId,
         password: password ? await hashPassword(password) : undefined,
         refreshToken,
         roles: updateRoles,

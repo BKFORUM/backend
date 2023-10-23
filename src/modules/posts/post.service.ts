@@ -45,14 +45,7 @@ export class PostService {
 
     if (search) {
       whereConditions.push({
-        OR: [
-          {
-            title: searchByMode(search),
-          },
-          {
-            content: searchByMode(search),
-          },
-        ],
+        content: searchByMode(search),
       });
     }
 
@@ -82,12 +75,82 @@ export class PostService {
               name: true,
             },
           },
-          title: true,
           content: true,
           user: {
             select: {
+              id: true,
               avatarUrl: true,
               fullName: true,
+            },
+          },
+          documents: {
+            select: {
+              id: true,
+              fileName: true,
+              fileUrl: true,
+            },
+          },
+          status: true,
+        },
+      }),
+    ]);
+
+    return Pagination.of({ take, skip }, total, posts);
+  }
+
+  async getPostsOfUser(id: string, query: GetAllPostsDto) {
+    const { search, skip, take, order } = query;
+    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
+      {
+        userId: id,
+      },
+    ];
+
+    if (search) {
+      whereConditions.push({
+        content: searchByMode(search),
+      });
+    }
+
+    let orderBy: Prisma.PostOrderByWithRelationInput = {};
+
+    if (order) {
+      orderBy = getOrderBy({ defaultValue: 'createdAt', order });
+    }
+
+    const [total, posts] = await Promise.all([
+      this.dbContext.post.count({
+        where: {
+          AND: whereConditions,
+        },
+      }),
+      this.dbContext.post.findMany({
+        where: {
+          AND: whereConditions,
+        },
+        skip,
+        orderBy,
+        take,
+        select: {
+          id: true,
+          forum: {
+            select: {
+              name: true,
+            },
+          },
+          content: true,
+          user: {
+            select: {
+              id: true,
+              avatarUrl: true,
+              fullName: true,
+            },
+          },
+          documents: {
+            select: {
+              id: true,
+              fileName: true,
+              fileUrl: true,
             },
           },
           status: true,
@@ -108,8 +171,9 @@ export class PostService {
         documents: true,
         comments: true,
         likes: true,
-        title: true,
         content: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
           select: {
             email: true,
@@ -135,7 +199,7 @@ export class PostService {
     { id }: RequestUser,
     documents: Express.Multer.File[],
   ) {
-    const { forumId, content, title } = body;
+    const { forumId, content } = body;
     const forum = await this.dbContext.forum.findUnique({
       where: { id: forumId },
       select: {
@@ -161,8 +225,6 @@ export class PostService {
     const uploadedDocuments =
       documents && (await this.cloudinaryService.uploadImages(documents));
 
-    console.log(uploadedDocuments);
-
     const documentsCreate: Prisma.PostDocumentCreateWithoutPostInput[] =
       uploadedDocuments.length > 0
         ? uploadedDocuments.map((document) => {
@@ -181,7 +243,6 @@ export class PostService {
     const post = await this.dbContext.post.create({
       data: {
         content,
-        title,
         forumId,
         userId: id,
         status:

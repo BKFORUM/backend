@@ -1,23 +1,34 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
-import { GetUsersQueryDto } from './dto';
+import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { UserService } from './user.service';
 import { ReqUser } from '@common/decorator/request-user.dto';
-import { RequestUser } from '@common/types';
+import { RequestUser, UUIDParam, UserRole } from '@common/types';
+import { RolesGuard } from 'src/guard/roles.guard';
+import { Roles } from '@common/decorator';
+import { PostService } from '@modules/posts';
+import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 @ApiTags('User')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly postService: PostService,
+  ) {}
 
   @ApiOperation({
     description: 'Get all users',
@@ -35,5 +46,46 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getProfile(@ReqUser() user: RequestUser) {
     return this.userService.getProfile(user);
+  }
+
+  @ApiOperation({
+    description: 'get current user',
+  })
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  async getById(@Param() { id }: UUIDParam) {
+    return this.userService.findById(id);
+  }
+
+  @ApiOperation({
+    description: 'Create a user',
+  })
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @Roles(UserRole.ADMIN)
+  async createUser(@Body() user: CreateUserDto) {
+    return this.userService.createUser(user);
+  }
+
+  @ApiOperation({
+    description: 'Update a user',
+  })
+  @Put(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(UserRole.ADMIN)
+  async update(@Param() { id }: UUIDParam, @Body() user: UpdateUserDto) {
+    return this.userService.updateUser(id, user);
+  }
+
+  @ApiOperation({
+    description: 'get posts of user by userId',
+  })
+  @Get(':id/posts')
+  @HttpCode(HttpStatus.OK)
+  async getPostOfUser(
+    @Param() { id }: UUIDParam,
+    @Query() query: GetAllPostsDto,
+  ) {
+    return this.postService.getPostsOfUser(id, query);
   }
 }
