@@ -212,6 +212,7 @@ export class ForumService {
       this.updateTopics(forumId, topicForumIds, dto.topicIds),
       this.updateName(forumId, dto.name),
       this.updateType(forumId, dto.type),
+      this.updateStatus(forumId, dto.status),
     ]);
   }
 
@@ -273,6 +274,17 @@ export class ForumService {
         where: { id: forumId },
         data: {
           type,
+        },
+      });
+    }
+  }
+
+  async updateStatus(forumId: string, status?: ResourceStatus): Promise<void> {
+    if (status) {
+      await this.dbContext.forum.update({
+        where: { id: forumId },
+        data: {
+          status,
         },
       });
     }
