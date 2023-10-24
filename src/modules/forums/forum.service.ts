@@ -1,5 +1,7 @@
 import { RequestUser, UserRole } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
+import { TopicService } from '@modules/topic';
+import { UserService } from '@modules/user';
 import {
   BadRequestException,
   Injectable,
@@ -12,15 +14,18 @@ import {
   Prisma,
   ResourceStatus,
   UserToForum,
-  UserType,
 } from '@prisma/client';
+import { difference } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
-import { AddUsersToForumDto, CreateForumDto, GetAllForumsDto } from './dto';
+import {
+  AddUsersToForumDto,
+  CreateForumDto,
+  GetAllForumsDto,
+  UpdateForumDto,
+} from './dto';
 import { ForumResponse } from './interfaces';
-import { UserService } from '@modules/user';
-import { TopicService } from '@modules/topic';
 
 @Injectable()
 export class ForumService {
@@ -192,6 +197,90 @@ export class ForumService {
           : undefined,
       },
     });
+  }
+
+  async updateForum(forumId: string, dto: UpdateForumDto): Promise<void> {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: { id: forumId },
+      include: {
+        topics: true,
+      },
+    });
+    const topicForumIds = forum.topics.map((topic) => topic.topicId);
+
+    await Promise.all([
+      this.updateTopics(forumId, topicForumIds, dto.topicIds),
+      this.updateName(forumId, dto.name),
+      this.updateType(forumId, dto.type),
+    ]);
+  }
+
+  async updateTopics(
+    forumId: string,
+    topicForumIds: string[],
+    topicIdsDto?: string[],
+  ): Promise<void> {
+    if (topicIdsDto) {
+      const existedTopics = await this.dbContext.topic.findMany({
+        where: {
+          id: {
+            in: topicIdsDto,
+          },
+        },
+      });
+
+      if (existedTopics.length !== topicIdsDto.length) {
+        throw new NotFoundException('One or more topics not found');
+      }
+
+      const newTopicIdsDto = difference(topicIdsDto, topicForumIds);
+      const oldTopicIdsDto = difference(topicForumIds, topicIdsDto);
+      const createTopics = newTopicIdsDto.map((topicId) => ({
+        forumId,
+        topicId,
+      }));
+
+      await Promise.all([
+        this.dbContext.forumToTopic.createMany({
+          data: createTopics,
+        }),
+        this.dbContext.forumToTopic.deleteMany({
+          where: {
+            forumId,
+            topicId: {
+              in: oldTopicIdsDto,
+            },
+          },
+        }),
+      ]);
+    }
+  }
+
+  async updateName(forumId: string, name?: string): Promise<void> {
+    if (name) {
+      await this.dbContext.forum.update({
+        where: { id: forumId },
+        data: {
+          name,
+        },
+      });
+    }
+  }
+
+  async updateType(forumId: string, type?: ForumType): Promise<void> {
+    if (type) {
+      await this.dbContext.forum.update({
+        where: { id: forumId },
+        data: {
+          type,
+        },
+      });
+    }
+  }
+
+  async deleteForum(id: string): Promise<void> {
+    await this.dbContext.forum.findUniqueOrThrow({ where: { id } });
+    await this.dbContext.forum.delete({ where: { id } });
   }
 
   async addUsersToForum(
