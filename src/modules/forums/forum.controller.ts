@@ -9,8 +9,8 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -79,7 +79,7 @@ export class ForumController {
   })
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Patch(':id')
+  @Put(':id')
   updateForum(
     @Param() { id }: UUIDParam,
     @Body() dto: UpdateForumDto,
