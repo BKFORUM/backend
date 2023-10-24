@@ -181,6 +181,7 @@ export class ForumService {
         name,
         modId: moderatorId,
         status: isAdmin ? ResourceStatus.ACTIVE : ResourceStatus.PENDING,
+        type,
         users: {
           create: {
             userType: GroupUserType.MODERATOR,
