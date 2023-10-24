@@ -4,10 +4,12 @@ import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -23,7 +25,12 @@ import { Roles } from 'src/common/decorator';
 import { UserRole } from 'src/common/types/enum';
 import { AccessTokenGuard } from 'src/guard';
 import { PaginatedResult } from 'src/providers';
-import { AddUsersToForumDto, CreateForumDto, GetAllForumsDto } from './dto';
+import {
+  AddUsersToForumDto,
+  CreateForumDto,
+  GetAllForumsDto,
+  UpdateForumDto,
+} from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
 
@@ -61,6 +68,37 @@ export class ForumController {
     @ReqUser() user: RequestUser,
   ): Promise<void> {
     return await this.forumService.createForum(body, user);
+  }
+
+  @ApiOperation({
+    description: 'Update a forum',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch(':id')
+  updateForum(
+    @Param() { id }: UUIDParam,
+    @Body() dto: UpdateForumDto,
+  ): Promise<void> {
+    return this.forumService.updateForum(id, dto);
+  }
+
+  @ApiOperation({
+    description: 'Delete a forum',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id')
+  deleteForum(@Param() { id }: UUIDParam): Promise<void> {
+    return this.forumService.deleteForum(id);
   }
 
   @ApiOperation({
