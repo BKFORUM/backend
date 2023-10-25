@@ -265,7 +265,7 @@ export class UserService {
     });
 
     if (facultyId) {
-      await this.facultyService.getFacultyById(id);
+      await this.facultyService.getFacultyById(facultyId);
     }
 
     if (isEmpty(existedUser.id)) {
