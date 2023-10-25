@@ -211,15 +211,18 @@ export class RoleService {
     this.logger.log({ updatedRole }, 'updated role record');
   }
 
-  async checkRoles(roles: string[]) {
-    if (!roles || roles.length === 0) {
-      const userRole = await this.dbContext.role.findMany({
+  async getDefaultRole(){
+    const userRole = await this.dbContext.role.findMany({
         where: {
           name: 'USER',
         },
       });
 
       return userRole;
+  }
+  async checkRoles(roles: string[]) {
+    if (!roles || roles.length === 0) {
+      return [];
     }
 
     const uniqueRoles = [...new Set(roles)];
