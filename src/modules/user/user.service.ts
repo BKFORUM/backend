@@ -57,6 +57,8 @@ export class UserService {
       throw new BadRequestException('The roles provided are invalid');
     }
 
+    const rolesToAdd = rolesData.length >0? rolesData: [await this.roleService.getDefaultRole()];
+
     const avatarUrl =
       type === UserType.STUDENT ? getStudentAvatarUrl(email) : null;
     const existedUsername = await this.findByUsername(email);
@@ -82,7 +84,7 @@ export class UserService {
         phoneNumber,
         address,
         roles: {
-          create: rolesData.map((role) => ({
+          create: rolesToAdd.map((role) => ({
             roleId: role.id,
           })),
         },
