@@ -45,7 +45,7 @@ export class ForumController {
   constructor(private readonly forumService: ForumService) {}
 
   @ApiOperation({
-    description: 'Get all forums only by ADMIN',
+    description: 'Get all forums',
   })
   @HttpCode(HttpStatus.OK)
   @Get()
