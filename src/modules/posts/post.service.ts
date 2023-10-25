@@ -226,7 +226,7 @@ export class PostService {
       documents && (await this.cloudinaryService.uploadImages(documents));
 
     const documentsCreate: Prisma.PostDocumentCreateWithoutPostInput[] =
-      uploadedDocuments.length > 0
+      uploadedDocuments && uploadedDocuments.length > 0
         ? uploadedDocuments.map((document) => {
             return {
               fileName: `${document.original_filename}_${uuid()}`,

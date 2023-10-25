@@ -47,7 +47,6 @@ export class ForumController {
   @ApiOperation({
     description: 'Get all forums only by ADMIN',
   })
-  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @Get()
   async getAllForums(

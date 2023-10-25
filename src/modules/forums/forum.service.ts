@@ -39,7 +39,6 @@ export class ForumService {
     { skip, take, order, search, isPending }: GetAllForumsDto,
     user: RequestUser,
   ): Promise<PaginatedResult<ForumResponse>> {
-    console.log(isPending);
     const whereConditions: Prisma.Enumerable<Prisma.ForumWhereInput> = [
       {
         status: isPending ? ResourceStatus.PENDING : ResourceStatus.ACTIVE,
