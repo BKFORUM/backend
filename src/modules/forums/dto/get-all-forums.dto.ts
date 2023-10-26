@@ -54,3 +54,84 @@ export class GetAllForumsDto {
   @IsOrderQueryParam('order', GetAllForumsOrderByEnum)
   order?: string;
 }
+
+export type GetForumResponse = Prisma.ForumGetPayload<{
+  select: {
+    name: true;
+    moderator: {
+      select: {
+        id: true;
+        fullName: true;
+        phoneNumber: true;
+        address: true;
+        avatarUrl: true;
+        dateOfBirth: true;
+        email: true;
+        gender: true;
+      };
+    };
+    topics: {
+      select: {
+        topic: {
+          select: {
+            id: true;
+            displayName: true;
+          };
+        };
+      };
+    };
+    posts: {
+      select: {
+        id: true;
+        user: {
+          select: {
+            id: true;
+            fullName: true;
+            phoneNumber: true;
+            address: true;
+            avatarUrl: true;
+            dateOfBirth: true;
+            email: true;
+            gender: true;
+          };
+        };
+        _count: {
+          select: {
+            comments: true;
+            likes: true;
+          };
+        };
+        createdAt: true;
+      };
+    };
+    users: {
+      select: {
+        user: {
+          select: {
+            id: true;
+            fullName: true;
+            phoneNumber: true;
+            address: true;
+            avatarUrl: true;
+            dateOfBirth: true;
+            email: true;
+            gender: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+export type GetUserResponse = Prisma.UserGetPayload<{
+  select: {
+    id: true;
+    fullName: true;
+    phoneNumber: true;
+    address: true;
+    avatarUrl: true;
+    dateOfBirth: true;
+    email: true;
+    gender: true;
+  };
+}>;

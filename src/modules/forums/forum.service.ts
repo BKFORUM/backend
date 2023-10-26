@@ -161,10 +161,12 @@ export class ForumService {
 
     const userCreateMany = userIds
       ? {
-          data: userIds.map((userId) => ({
-            userType: GroupUserType.MEMBER,
-            userId,
-          })),
+          data: userIds
+            .filter((userId) => userId !== moderatorId)
+            .map((userId) => ({
+              userType: GroupUserType.MEMBER,
+              userId,
+            })),
           skipDuplicates: true,
         }
       : undefined;
@@ -197,6 +199,59 @@ export class ForumService {
           : undefined,
       },
     });
+  }
+
+  selectUser = {
+    select: {
+      id: true,
+      fullName: true,
+      phoneNumber: true,
+      address: true,
+      avatarUrl: true,
+      dateOfBirth: true,
+      email: true,
+      gender: true,
+    },
+  };
+
+  async getForumById(id: string) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: { id },
+      select: {
+        name: true,
+        moderator: this.selectUser,
+        topics: {
+          select: {
+            topic: {
+              select: {
+                id: true,
+                displayName: true,
+              },
+            },
+          },
+        },
+        posts: {
+          select: {
+            id: true,
+            user: this.selectUser,
+            _count: {
+              select: {
+                comments: true,
+                likes: true,
+              },
+            },
+            createdAt: true,
+          },
+        },
+        users: {
+          select: {
+            user: this.selectUser,
+          },
+        },
+      },
+    });
+
+    return forum;
   }
 
   async updateForum(forumId: string, dto: UpdateForumDto): Promise<void> {

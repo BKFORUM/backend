@@ -29,10 +29,12 @@ import {
   AddUsersToForumDto,
   CreateForumDto,
   GetAllForumsDto,
+  GetForumResponse,
   UpdateForumDto,
 } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
+import { Forum } from '@prisma/client';
 
 @ApiBearerAuth()
 @ApiTags('Forum')
@@ -84,6 +86,19 @@ export class ForumController {
     @Body() dto: UpdateForumDto,
   ): Promise<void> {
     return this.forumService.updateForum(id, dto);
+  }
+
+  @ApiOperation({
+    description: 'Get Forum by id',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get(':id')
+  getForumById(@Param() { id }: UUIDParam): Promise<GetForumResponse> {
+    return this.forumService.getForumById(id);
   }
 
   @ApiOperation({
