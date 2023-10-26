@@ -24,7 +24,6 @@ jobs:
         with:
           push: true
           tags: thanhdatnguyen1809/pbl6-app:latest
-        env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
           JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
