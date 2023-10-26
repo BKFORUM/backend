@@ -14,6 +14,11 @@ export type RequestUser = {
 
 export type CloudinaryResponse = UploadApiResponse | UploadApiErrorResponse;
 
+export type Document = {
+  name: string;
+  url: string;
+};
+
 export type Models = keyof Omit<
   PrismaClient,
   | 'disconnect'

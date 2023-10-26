@@ -41,13 +41,8 @@ export class PostController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(FilesInterceptor('documents', 5))
-  async createPosts(
-    @Body() body: CreatePostDto,
-    @ReqUser() user: RequestUser,
-    @UploadedFiles() documents: Express.Multer.File[],
-  ) {
-    return this.postService.createPost(body, user, documents);
+  async createPosts(@Body() body: CreatePostDto, @ReqUser() user: RequestUser) {
+    return this.postService.createPost(body, user);
   }
 
   @Get(':id')

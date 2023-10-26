@@ -1,12 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { v2 } from 'cloudinary';
 import toStream = require('buffer-to-stream');
-import { CloudinaryResponse } from '@common/types';
+import { CloudinaryResponse, Document } from '@common/types';
 @Injectable()
 export class CloudinaryService {
-  async uploadImages(
-    files: Express.Multer.File[],
-  ): Promise<CloudinaryResponse[]> {
+  async uploadImages(files: Express.Multer.File[]): Promise<Document[]> {
     const uploadFiles = (await Promise.all([
       ...files.map(async (file) => {
         return new Promise((resolve, reject) => {
@@ -25,6 +23,9 @@ export class CloudinaryService {
       }),
     ])) as CloudinaryResponse[];
 
-    return uploadFiles;
+    return uploadFiles.map((file) => ({
+      url: file.url,
+      name: file.original_filename,
+    }));
   }
 }

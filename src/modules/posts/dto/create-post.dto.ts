@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -26,4 +26,29 @@ export class CreatePostDto {
   @IsNotEmpty()
   @IsString()
   content: string;
+
+  @ApiPropertyOptional({
+    description: 'File of the posts',
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DocumentDto)
+  documents: DocumentDto[];
+}
+
+export class DocumentDto {
+  @ApiProperty({
+    description: 'Name of the file',
+    example: 'hehe.jpg',
+  })
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiProperty({
+    description: 'Url of the file',
+  })
+  @IsNotEmpty()
+  @IsString()
+  url: string;
 }

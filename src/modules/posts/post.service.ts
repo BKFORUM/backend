@@ -194,12 +194,8 @@ export class PostService {
     };
   }
 
-  async createPost(
-    body: CreatePostDto,
-    { id }: RequestUser,
-    documents: Express.Multer.File[],
-  ) {
-    const { forumId, content } = body;
+  async createPost(body: CreatePostDto, { id }: RequestUser) {
+    const { forumId, content, documents } = body;
     const forum = await this.dbContext.forum.findUnique({
       where: { id: forumId },
       select: {
@@ -222,14 +218,11 @@ export class PostService {
       throw new BadRequestException('The user is not in the forum');
     }
 
-    const uploadedDocuments =
-      documents && (await this.cloudinaryService.uploadImages(documents));
-
     const documentsCreate: Prisma.PostDocumentCreateWithoutPostInput[] =
-      uploadedDocuments && uploadedDocuments.length > 0
-        ? uploadedDocuments.map((document) => {
+      documents && documents.length > 0
+        ? documents.map((document) => {
             return {
-              fileName: `${document.original_filename}_${uuid()}`,
+              fileName: document.name,
               fileUrl: document.url,
               user: {
                 connect: {

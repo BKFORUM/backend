@@ -10,11 +10,13 @@ import { PostModule } from './modules/posts';
 import { TopicModule } from '@modules/topic';
 import { NotificationGateway } from './notification/notification.gateway';
 import { FacultyModule } from './modules/faculty/faculty.module';
+import { CloudinaryModule } from '@modules/cloudinary';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    CloudinaryModule,
     AuthModule,
     UserModule,
     RoleModule,
