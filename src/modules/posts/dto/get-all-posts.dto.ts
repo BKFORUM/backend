@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Prisma } from '@prisma/client';
+import { Prisma, ResourceStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, IsEnum } from 'class-validator';
 import { IsOrderQueryParam } from 'src/common/decorator';
 import { GetAllPostsOrderByEnum } from '../post.enum';
 
@@ -44,4 +44,12 @@ export class GetAllPostsDto {
   @IsString()
   @IsOrderQueryParam('order', GetAllPostsOrderByEnum)
   order?: string;
+
+  @ApiPropertyOptional({
+    description: `The status of the post`,
+    example: `Available values: ${Object.values(ResourceStatus)}`,
+  })
+  @IsOptional()
+  @IsEnum(ResourceStatus)
+  status: ResourceStatus = ResourceStatus.ACTIVE;
 }
