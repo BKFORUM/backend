@@ -26,14 +26,11 @@ jobs:
           tags: thanhdatnguyen1809/pbl6-app:latest
       - name: Deploy on remote server
         uses: appleboy/ssh-action@v1.0.0
-        env:
-          REGISTRY: ${{ secrets.REGISTRY }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          envs: REGISTRY
           script: |
-            docker pull $REGISTRY:latest
+            docker pull ${{ secrets.REGISTRY }}:latest
             whoami
