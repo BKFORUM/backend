@@ -311,7 +311,3 @@ model Friendship {
   @@unique([receiverId, senderId])
   @@map("friendship")
 }
-
-model Test {
-  id    String @id
-}
