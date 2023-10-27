@@ -8,7 +8,7 @@ RUN npm install --legacy-peer-deps
 
 COPY . .
 
-RUN npx prisma generate dev
+RUN npx prisma migrate deploy
 RUN npm run build
 
 EXPOSE 80
