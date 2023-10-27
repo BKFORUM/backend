@@ -32,4 +32,4 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           script: |
             docker pull ${{ secrets.REGISTRY }}:latest
-            whoami
+            docker compose up -d
