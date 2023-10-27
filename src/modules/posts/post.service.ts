@@ -222,7 +222,7 @@ export class PostService {
       documents && documents.length > 0
         ? documents.map((document) => {
             return {
-              fileName: document.name,
+              fileName: document.fileName,
               fileUrl: document.url,
               user: {
                 connect: {

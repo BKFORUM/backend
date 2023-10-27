@@ -43,7 +43,7 @@ export class DocumentDto {
   })
   @IsNotEmpty()
   @IsString()
-  name: string;
+  fileName: string;
 
   @ApiProperty({
     description: 'Url of the file',

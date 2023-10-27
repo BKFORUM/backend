@@ -11,7 +11,18 @@ import { TopicModule } from '@modules/topic';
 import { NotificationGateway } from './notification/notification.gateway';
 import { FacultyModule } from './modules/faculty/faculty.module';
 import { CloudinaryModule } from '@modules/cloudinary';
+import { APP_FILTER } from '@nestjs/core';
+import { GlobalExceptionFilter } from './filters/global-exception.filter';
+import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.filter';
 @Module({
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: PrismaClientExceptionFilter,
+    },
+    AppService,
+    NotificationGateway,
+  ],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -26,6 +37,5 @@ import { CloudinaryModule } from '@modules/cloudinary';
     FacultyModule,
   ],
   controllers: [AppController],
-  providers: [AppService, NotificationGateway],
 })
 export class AppModule {}

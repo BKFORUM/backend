@@ -38,7 +38,7 @@ export class GetAllPostsDto {
     description: `Order by keyword. \n\n  Available values: ${Object.values(
       GetAllPostsOrderByEnum,
     )}`,
-    example: `${GetAllPostsOrderByEnum.TITLE}:${Prisma.SortOrder.asc}`,
+    example: `${GetAllPostsOrderByEnum.CONTENT}:${Prisma.SortOrder.asc}`,
   })
   @IsOptional()
   @IsString()

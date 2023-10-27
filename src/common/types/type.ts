@@ -15,7 +15,7 @@ export type RequestUser = {
 export type CloudinaryResponse = UploadApiResponse | UploadApiErrorResponse;
 
 export type Document = {
-  name: string;
+  fileName: string;
   url: string;
 };
 
