@@ -294,3 +294,7 @@ model PostDocument {
   @@map("post_document")
 
 }
+
+model Test {
+  id    String @id
+}
