@@ -13,4 +13,4 @@ RUN npm run build
 
 EXPOSE 80
 
-CMD ["/bin/bash", "-c", "npx prisma migrate deploy;npm run start:dev"]
+CMD ["node", "/usr/src/app/dist/src/main.js"]
