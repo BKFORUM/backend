@@ -20,17 +20,16 @@ import { v4 as uuid } from 'uuid';
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name);
-  constructor(
-    private dbContext: PrismaService,
-    private cloudinaryService: CloudinaryService,
-  ) {}
+  constructor(private dbContext: PrismaService) {}
 
   async getAllPosts(
     query: GetAllPostsDto,
     user: RequestUser,
   ): Promise<PaginatedResult<PostResponse>> {
-    const { search, skip, take, order } = query;
-    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [];
+    const { search, skip, take, order, status } = query;
+    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
+      { status },
+    ];
     if (!user.roles.includes(UserRole.ADMIN)) {
       whereConditions.push({
         forum: {
@@ -91,6 +90,7 @@ export class PostService {
             },
           },
           status: true,
+          createdAt: true,
         },
       }),
     ]);
@@ -99,10 +99,11 @@ export class PostService {
   }
 
   async getPostsOfUser(id: string, query: GetAllPostsDto) {
-    const { search, skip, take, order } = query;
+    const { search, skip, take, order, status } = query;
     let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
         userId: id,
+        status,
       },
     ];
 
@@ -159,6 +160,74 @@ export class PostService {
     ]);
 
     return Pagination.of({ take, skip }, total, posts);
+  }
+
+  async deletePost(id: string, { id: userId, roles }: RequestUser) {
+    const post = await this.dbContext.post.findUniqueOrThrow({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        forum: {
+          select: {
+            modId: true,
+          },
+        },
+      },
+    });
+
+    const isAbleDelete =
+      post.forum.modId === userId ||
+      roles.includes(UserRole.ADMIN) ||
+      userId === post.userId;
+
+    if (!isAbleDelete) {
+      throw new BadRequestException('You cannot delete this post');
+    }
+    await this.dbContext.post.update({
+      where: {
+        id,
+      },
+      data: {
+        status: ResourceStatus.DELETED,
+      },
+    });
+
+    this.logger.log('Delete a post record', { post });
+  }
+
+  async updatePost(id: string, { id: userId, roles }: RequestUser) {
+    const post = await this.dbContext.post.findUniqueOrThrow({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        forum: {
+          select: {
+            modId: true,
+          },
+        },
+      },
+    });
+
+    const isAbleDelete =
+      post.forum.modId === userId ||
+      roles.includes(UserRole.ADMIN) ||
+      userId === post.userId;
+
+    if (!isAbleDelete) {
+      throw new BadRequestException('You cannot delete this post');
+    }
+    await this.dbContext.post.update({
+      where: {
+        id,
+      },
+      data: {
+        status: ResourceStatus.DELETED,
+      },
+    });
+
+    this.logger.log('Delete a post record', { post });
   }
 
   async getPostById(id: string) {

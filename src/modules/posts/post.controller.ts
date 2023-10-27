@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UploadedFiles,
   UseGuards,
@@ -49,5 +51,17 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async getPostById(@Param() { id }: UUIDParam) {
     return this.postService.getPostById(id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deletePost(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
+    return this.postService.deletePost(id, user);
+  }
+
+  @Put(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updatePost(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
+    return this.postService.updatePost(id, user);
   }
 }
