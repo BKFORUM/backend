@@ -194,9 +194,12 @@ model Forum {
 }
 
 model UserToForum {
-  userId   String        @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
-  forumId  String        @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
+  userId   String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  forumId  String         @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   userType GroupUserType
+  status   ResourceStatus @default(ACTIVE)
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   forum Forum @relation(fields: [forumId], references: [id], onDelete: Cascade)

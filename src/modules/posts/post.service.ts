@@ -14,8 +14,6 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { RequestUser } from '@common/types';
 import { isEmpty } from 'class-validator';
 import { UserRole } from '@common/types/enum';
-import { CloudinaryService } from '@modules/cloudinary';
-import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class PostService {

@@ -5,6 +5,7 @@ import { UserService } from '@modules/user';
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -26,6 +27,7 @@ import {
   UpdateForumDto,
 } from './dto';
 import { ForumResponse } from './interfaces';
+import { ForumRequestDto } from './dto/forum-request.dto';
 
 @Injectable()
 export class ForumService {
@@ -34,6 +36,8 @@ export class ForumService {
     private readonly userService: UserService,
     private readonly topicService: TopicService,
   ) {}
+
+  private readonly logger = new Logger(ForumService.name);
 
   async getAllForums(
     { skip, take, order, search, isPending }: GetAllForumsDto,
@@ -244,6 +248,9 @@ export class ForumService {
           },
         },
         users: {
+          where: {
+            status: ResourceStatus.ACTIVE,
+          },
           select: {
             user: this.selectUser,
           },
@@ -366,7 +373,7 @@ export class ForumService {
 
     await this.userService.validateUserIds(dto.userIds);
 
-    const userToForum = await this.dbContext.userToForum.findFirst({
+    const userToForum = await this.dbContext.userToForum.findMany({
       where: {
         forumId,
         AND: {
@@ -377,13 +384,13 @@ export class ForumService {
       },
     });
 
-    if (userToForum) {
+    if (userToForum.length !== dto.userIds.length) {
       throw new BadRequestException(
-        `The user with id:${userToForum.userId} belongs to another forum`,
+        `One of the user does not belong to the forum`,
       );
     }
 
-    const data: UserToForum[] = dto.userIds.map((userId) => {
+    const data = dto.userIds.map((userId) => {
       return {
         forumId: forumId,
         userId,
@@ -446,5 +453,112 @@ export class ForumService {
     ]);
 
     return Pagination.of({ take, skip }, total, posts);
+  }
+
+  async createForumRequest(id: string, user: RequestUser) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: { id },
+      select: {
+        users: true,
+      },
+    });
+    const forumMember = forum.users.some(({ userId }) => userId === user.id);
+
+    if (forumMember) {
+      throw new BadRequestException('You are already member of this forum');
+    }
+
+    const request = await this.dbContext.userToForum.create({
+      data: {
+        userType: GroupUserType.MEMBER,
+        forumId: id,
+        status: ResourceStatus.PENDING,
+        userId: user.id,
+      },
+    });
+
+    this.logger.log('Created a forum request', { request });
+  }
+
+  async getForumRequests(id: string, user: RequestUser) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      select: {
+        modId: true,
+      },
+    });
+    if (user.id !== forum.modId) {
+      throw new BadRequestException('You do not have permission to view this');
+    }
+    const userToForums = this.dbContext.userToForum.findMany({
+      where: {
+        forumId: id,
+        status: ResourceStatus.PENDING,
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+            email: true,
+          },
+        },
+
+        userType: true,
+      },
+      orderBy: {
+        createdAt: Prisma.SortOrder.asc,
+      },
+    });
+
+    return userToForums;
+  }
+
+  async patchForumRequests(
+    forumId: string,
+    { userId, status }: ForumRequestDto,
+    user: RequestUser,
+  ) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: {
+        id: forumId,
+      },
+      select: {
+        modId: true,
+      },
+    });
+    if (user.id !== forum.modId) {
+      throw new BadRequestException('You do not have permission to view this');
+    }
+
+    const request = await this.dbContext.userToForum.findUniqueOrThrow({
+      where: {
+        userId_forumId: {
+          userId,
+          forumId,
+        },
+      },
+    });
+
+    if (!request || request.status === status) {
+      throw new BadRequestException('The request is invalid');
+    }
+
+    await this.dbContext.userToForum.update({
+      where: {
+        userId_forumId: {
+          userId,
+          forumId,
+        },
+      },
+      data: {
+        status,
+      },
+    });
+
+    this.logger.log('Patch forum request successfully', { request });
   }
 }
