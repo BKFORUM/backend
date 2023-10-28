@@ -32,5 +32,5 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           script: |
             cd ${{ secrets.SERVER_WORKING_DIRECTORY }}
-            docker pull ${{ secrets.REGISTRY }}:latest
-            docker compose up -d
+            sudo docker pull ${{ secrets.REGISTRY }}:latest
+            sudo docker compose up -d
