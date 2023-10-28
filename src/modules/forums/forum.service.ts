@@ -405,11 +405,12 @@ export class ForumService {
 
   async getPostsOfForum(
     id: string,
-    { skip, take, order, search }: GetAllPostsDto,
+    { skip, take, order, search, status }: GetAllPostsDto,
   ) {
     const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
         forumId: id,
+        status,
       },
     ];
     if (search) {
@@ -448,6 +449,21 @@ export class ForumService {
           content: true,
           status: true,
           documents: true,
+          _count: {
+            select: {
+              comments: true,
+              likes: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              avatarUrl: true,
+              fullName: true,
+              email: true,
+              gender: true,
+            },
+          },
         },
       }),
     ]);
