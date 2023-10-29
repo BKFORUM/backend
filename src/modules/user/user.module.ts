@@ -1,13 +1,14 @@
-import { Module } from '@nestjs/common';
-import { UserController } from './user.controller';
-import { UserService } from './user.service';
+import { FacultyModule } from '@modules/faculty/faculty.module';
+import { ForumModule } from '@modules/forums';
+import { PostModule } from '@modules/posts';
+import { Module, forwardRef } from '@nestjs/common';
 import { DatabaseModule } from 'src/database';
 import { RoleModule } from '../roles';
-import { FacultyModule } from '@modules/faculty/faculty.module';
-import { PostModule } from '@modules/posts';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
 
 @Module({
-  imports: [DatabaseModule, RoleModule, FacultyModule, PostModule],
+  imports: [DatabaseModule, RoleModule, FacultyModule, PostModule, forwardRef(() => ForumModule)],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

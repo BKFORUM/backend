@@ -4,17 +4,18 @@ import { TopicService } from '@modules/topic';
 import { UserService } from '@modules/user';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef
 } from '@nestjs/common';
 import {
   Forum,
   ForumType,
   GroupUserType,
   Prisma,
-  ResourceStatus,
-  UserToForum,
+  ResourceStatus
 } from '@prisma/client';
 import { difference } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
@@ -26,13 +27,14 @@ import {
   GetAllForumsDto,
   UpdateForumDto,
 } from './dto';
-import { ForumResponse } from './interfaces';
 import { ForumRequestDto } from './dto/forum-request.dto';
+import { ForumResponse } from './interfaces';
 
 @Injectable()
 export class ForumService {
   constructor(
     private readonly dbContext: PrismaService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly topicService: TopicService,
   ) {}
@@ -576,5 +578,49 @@ export class ForumService {
     });
 
     this.logger.log('Patch forum request successfully', { request });
+  }
+
+  getForumsOfUser(userId: string): Promise<ForumResponse[]> {
+    return this.dbContext.forum.findMany({ where: { users: { every: { userId } } }, select: {
+      id: true,
+      type: true,
+      name: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      moderator: {
+        select: {
+          id: true,
+          fullName: true,
+          gender: true,
+          dateOfBirth: true,
+          avatarUrl: true,
+          faculty: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          type: true,
+        },
+      },
+      topics: {
+        select: {
+          topic: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          users: true,
+        },
+      },
+    }, orderBy: {
+      type: 'desc'
+    } });
   }
 }
