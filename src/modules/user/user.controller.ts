@@ -45,11 +45,11 @@ export class UserController {
   @Get('profile')
   @HttpCode(HttpStatus.OK)
   async getProfile(@ReqUser() user: RequestUser) {
-    return this.userService.getProfile(user);
+    return this.userService.findById(user.id);
   }
 
   @ApiOperation({
-    description: 'get current user',
+    description: 'get user by Id',
   })
   @Get(':id')
   @HttpCode(HttpStatus.OK)

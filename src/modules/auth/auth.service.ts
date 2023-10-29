@@ -69,7 +69,7 @@ export class AuthService {
   }
 
   async refreshTokens(userId: string, refreshToken: string) {
-    const user = await this.userService.findById(userId);
+    const user = await this.userService.getCredentials(userId);
 
     if (!user || !user.refreshToken)
       throw new ForbiddenException('Access Denied');

@@ -122,7 +122,16 @@ export class ForumService {
           },
           _count: {
             select: {
-              users: true,
+              users: {
+                where: {
+                  status: ResourceStatus.ACTIVE,
+                },
+              },
+              posts: {
+                where: {
+                  status: ResourceStatus.ACTIVE,
+                },
+              },
             },
           },
         },
@@ -240,7 +249,11 @@ export class ForumService {
             user: this.selectUser,
             _count: {
               select: {
-                comments: true,
+                comments: {
+                  where: {
+                    status: ResourceStatus.ACTIVE,
+                  },
+                },
                 likes: true,
               },
             },
@@ -438,7 +451,6 @@ export class ForumService {
         where: {
           AND: whereConditions,
         },
-
         skip,
         orderBy,
         take,
@@ -451,7 +463,11 @@ export class ForumService {
           documents: true,
           _count: {
             select: {
-              comments: true,
+              comments: {
+                where: {
+                  status: ResourceStatus.ACTIVE,
+                },
+              },
               likes: true,
             },
           },

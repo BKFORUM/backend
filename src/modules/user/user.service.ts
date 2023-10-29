@@ -140,7 +140,7 @@ export class UserService {
     return user;
   };
 
-  findById = async (id: string) => {
+  getCredentials = async (id: string) => {
     const user = this.dbContext.user.findUniqueOrThrow({
       where: { id },
       select: {
@@ -158,22 +158,61 @@ export class UserService {
             },
           },
         },
-        address: true,
-        type: true,
-        avatarUrl: true,
-        dateOfBirth: true,
-        facultyId: true,
-        faculty: {
-          select: {
-            name: true,
-          },
-        },
-        gender: true,
-        phoneNumber: true,
       },
     });
 
     return user;
+  };
+
+  findById = async (id: string) => {
+    const user = await this.dbContext.user.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        dateOfBirth: true,
+        email: true,
+        address: true,
+        phoneNumber: true,
+        gender: true,
+        type: true,
+        faculty: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        forums: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+          },
+        },
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      ...user,
+      roles: user.roles.map((role) => {
+        return role.role;
+      }),
+    };
   };
 
   async getAllUsers({
@@ -319,56 +358,5 @@ export class UserService {
     if (users.length !== userIds.length) {
       throw new NotFoundException(`One or more users not found`);
     }
-  }
-
-  async getProfile({ id }: RequestUser) {
-    const currentUser = await this.dbContext.user.findUniqueOrThrow({
-      where: {
-        id,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        dateOfBirth: true,
-        email: true,
-        address: true,
-        phoneNumber: true,
-        gender: true,
-        type: true,
-        faculty: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        forums: {
-          select: {
-            id: true,
-            type: true,
-            name: true,
-          },
-        },
-        avatarUrl: true,
-        createdAt: true,
-        updatedAt: true,
-        roles: {
-          select: {
-            role: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      ...currentUser,
-      roles: currentUser.roles.map((role) => {
-        return role.role;
-      }),
-    };
   }
 }
