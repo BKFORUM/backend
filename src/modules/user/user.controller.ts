@@ -20,6 +20,8 @@ import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from '@common/decorator';
 import { PostService } from '@modules/posts';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
+import { GetAllForumsDto } from '@modules/forums/dto';
+import { ForumService } from '@modules/forums';
 @ApiTags('User')
 @UseGuards(AccessTokenGuard)
 @ApiBearerAuth()
@@ -28,6 +30,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly postService: PostService,
+    private readonly forumService: ForumService,
   ) {}
 
   @ApiOperation({
@@ -87,5 +90,17 @@ export class UserController {
     @Query() query: GetAllPostsDto,
   ) {
     return this.postService.getPostsOfUser(id, query);
+  }
+
+  @ApiOperation({
+    description: 'Get forums of user by userId',
+  })
+  @Get(':id/forums')
+  @HttpCode(HttpStatus.OK)
+  async getForumsOfUser (
+    @Param() { id }: UUIDParam,
+    // @Query() query: GetAllForumsDto,
+  ) {
+    return this.forumService.getForumsOfUser(id);
   }
 }
