@@ -154,7 +154,7 @@ export class ForumService {
           ...forum,
           topics: forum.topics.map(({ topic }) => topic),
           yourStatus:
-            forum.users.find(({ userId }) => user.id === userId).status ??
+            forum.users.find(({ userId }) => user.id === userId)?.status ??
             NOT_MEMBER,
         };
       }),
