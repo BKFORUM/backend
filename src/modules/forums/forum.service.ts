@@ -1,4 +1,4 @@
-import { RequestUser, UserRole } from '@common/types';
+import { NOT_MEMBER, RequestUser, UserRole } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import { TopicService } from '@modules/topic';
 import { UserService } from '@modules/user';
@@ -8,14 +8,14 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  forwardRef
+  forwardRef,
 } from '@nestjs/common';
 import {
   Forum,
   ForumType,
   GroupUserType,
   Prisma,
-  ResourceStatus
+  ResourceStatus,
 } from '@prisma/client';
 import { difference } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
@@ -96,6 +96,12 @@ export class ForumService {
           status: true,
           createdAt: true,
           updatedAt: true,
+          users: {
+            select: {
+              userId: true,
+              status: true,
+            },
+          },
           moderator: {
             select: {
               id: true,
@@ -147,6 +153,9 @@ export class ForumService {
         return {
           ...forum,
           topics: forum.topics.map(({ topic }) => topic),
+          yourStatus:
+            forum.users.find(({ userId }) => user.id === userId).status ||
+            NOT_MEMBER,
         };
       }),
     );
@@ -246,6 +255,9 @@ export class ForumService {
           },
         },
         posts: {
+          where: {
+            status: ResourceStatus.ACTIVE,
+          },
           select: {
             id: true,
             user: this.selectUser,
@@ -597,46 +609,50 @@ export class ForumService {
   }
 
   getForumsOfUser(userId: string): Promise<ForumResponse[]> {
-    return this.dbContext.forum.findMany({ where: { users: { every: { userId } } }, select: {
-      id: true,
-      type: true,
-      name: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      moderator: {
-        select: {
-          id: true,
-          fullName: true,
-          gender: true,
-          dateOfBirth: true,
-          avatarUrl: true,
-          faculty: {
-            select: {
-              id: true,
-              name: true,
+    return this.dbContext.forum.findMany({
+      where: { users: { every: { userId } } },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        moderator: {
+          select: {
+            id: true,
+            fullName: true,
+            gender: true,
+            dateOfBirth: true,
+            avatarUrl: true,
+            faculty: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
-          },
-          type: true,
-        },
-      },
-      topics: {
-        select: {
-          topic: {
-            select: {
-              id: true,
-              name: true,
-            },
+            type: true,
           },
         },
-      },
-      _count: {
-        select: {
-          users: true,
+        topics: {
+          select: {
+            topic: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            users: true,
+          },
         },
       },
-    }, orderBy: {
-      type: 'desc'
-    } });
+      orderBy: {
+        type: 'desc',
+      },
+    });
   }
 }
