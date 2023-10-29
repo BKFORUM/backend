@@ -50,5 +50,5 @@ export class DocumentDto {
   })
   @IsNotEmpty()
   @IsString()
-  url: string;
+  fileUrl: string;
 }

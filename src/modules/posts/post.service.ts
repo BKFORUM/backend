@@ -14,6 +14,8 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { RequestUser } from '@common/types';
 import { isEmpty } from 'class-validator';
 import { UserRole } from '@common/types/enum';
+import { UpdatePostDto } from './dto/update-post.dto';
+import { difference, differenceBy, differenceWith } from 'lodash';
 
 @Injectable()
 export class PostService {
@@ -194,7 +196,12 @@ export class PostService {
     this.logger.log('Delete a post record', { post });
   }
 
-  async updatePost(id: string, { id: userId, roles }: RequestUser) {
+  async updatePost(
+    id: string,
+    { id: userId }: RequestUser,
+    body: UpdatePostDto,
+  ) {
+    const { content, documents } = body;
     const post = await this.dbContext.post.findUniqueOrThrow({
       where: { id },
       select: {
@@ -205,23 +212,46 @@ export class PostService {
             modId: true,
           },
         },
+        documents: true,
       },
     });
 
-    const isAbleDelete =
-      post.forum.modId === userId ||
-      roles.includes(UserRole.ADMIN) ||
-      userId === post.userId;
+    const isAleUpdate = userId === post.userId;
 
-    if (!isAbleDelete) {
+    if (!isAleUpdate) {
       throw new BadRequestException('You cannot delete this post');
     }
+
+    const newDocuments = differenceBy(documents, post.documents, 'fileUrl');
+    const oldDocuments = differenceBy(post.documents, documents, 'fileUrl');
+
+    const deleteDocuments = oldDocuments.length
+      ? {
+          id: {
+            in: oldDocuments.map(({ id }) => id),
+          },
+        }
+      : undefined;
+
+    const createDocuments = newDocuments.length
+      ? {
+          data: newDocuments.map(({ fileName, fileUrl }) => ({
+            fileName,
+            fileUrl,
+            userId,
+          })),
+        }
+      : undefined;
     await this.dbContext.post.update({
       where: {
         id,
       },
       data: {
-        status: ResourceStatus.DELETED,
+        content,
+        documents: {
+          deleteMany: deleteDocuments,
+          createMany: createDocuments,
+        },
       },
     });
 
@@ -290,7 +320,7 @@ export class PostService {
         ? documents.map((document) => {
             return {
               fileName: document.fileName,
-              fileUrl: document.url,
+              fileUrl: document.fileUrl,
               user: {
                 connect: {
                   id,

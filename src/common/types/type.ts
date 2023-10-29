@@ -16,7 +16,7 @@ export type CloudinaryResponse = UploadApiResponse | UploadApiErrorResponse;
 
 export type Document = {
   fileName: string;
-  url: string;
+  fileUrl: string;
 };
 
 export type Models = keyof Omit<

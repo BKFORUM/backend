@@ -24,7 +24,7 @@ export class CloudinaryService {
     ])) as CloudinaryResponse[];
 
     return uploadFiles.map((file) => ({
-      url: file.url,
+      fileUrl: file.url,
       fileName: file.original_filename,
     }));
   }
