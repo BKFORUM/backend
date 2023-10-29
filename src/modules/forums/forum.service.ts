@@ -610,7 +610,7 @@ export class ForumService {
 
   getForumsOfUser(userId: string): Promise<ForumResponse[]> {
     return this.dbContext.forum.findMany({
-      where: { users: { every: { userId } } },
+      where: { users: { every: { userId } }, status: ResourceStatus.ACTIVE },
       select: {
         id: true,
         type: true,

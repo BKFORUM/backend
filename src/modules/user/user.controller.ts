@@ -99,7 +99,6 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async getForumsOfUser (
     @Param() { id }: UUIDParam,
-    // @Query() query: GetAllForumsDto,
   ) {
     return this.forumService.getForumsOfUser(id);
   }
