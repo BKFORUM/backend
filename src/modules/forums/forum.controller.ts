@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -35,6 +36,7 @@ import {
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
 import { Forum } from '@prisma/client';
+import { ForumRequestDto } from './dto/forum-request.dto';
 
 @ApiBearerAuth()
 @ApiTags('Forum')
@@ -142,5 +144,39 @@ export class ForumController {
     @Query() query: GetAllPostsDto,
   ) {
     return await this.forumService.getPostsOfForum(id, query);
+  }
+
+  @ApiOperation({
+    description: 'Create a request to join a forum',
+  })
+  @Post(':id/requests')
+  @HttpCode(HttpStatus.CREATED)
+  async createRequest(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.forumService.createForumRequest(id, user);
+  }
+
+  @ApiOperation({
+    description: 'Get all pending requests of a forum',
+  })
+  @Get(':id/requests')
+  @HttpCode(HttpStatus.OK)
+  async getRequests(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
+    return this.forumService.getForumRequests(id, user);
+  }
+
+  @ApiOperation({
+    description: 'Update requests status of a forum',
+  })
+  @Patch(':id/requests')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async patchRequest(
+    @Param() { id }: UUIDParam,
+    @Body() request: ForumRequestDto,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.forumService.patchForumRequests(id, request, user);
   }
 }

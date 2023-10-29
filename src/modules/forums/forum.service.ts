@@ -6,6 +6,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   forwardRef
 } from '@nestjs/common';
@@ -14,8 +15,7 @@ import {
   ForumType,
   GroupUserType,
   Prisma,
-  ResourceStatus,
-  UserToForum,
+  ResourceStatus
 } from '@prisma/client';
 import { difference } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
@@ -27,6 +27,7 @@ import {
   GetAllForumsDto,
   UpdateForumDto,
 } from './dto';
+import { ForumRequestDto } from './dto/forum-request.dto';
 import { ForumResponse } from './interfaces';
 
 @Injectable()
@@ -37,6 +38,8 @@ export class ForumService {
     private readonly userService: UserService,
     private readonly topicService: TopicService,
   ) {}
+
+  private readonly logger = new Logger(ForumService.name);
 
   async getAllForums(
     { skip, take, order, search, isPending }: GetAllForumsDto,
@@ -247,6 +250,9 @@ export class ForumService {
           },
         },
         users: {
+          where: {
+            status: ResourceStatus.ACTIVE,
+          },
           select: {
             user: this.selectUser,
           },
@@ -369,7 +375,7 @@ export class ForumService {
 
     await this.userService.validateUserIds(dto.userIds);
 
-    const userToForum = await this.dbContext.userToForum.findFirst({
+    const userToForum = await this.dbContext.userToForum.findMany({
       where: {
         forumId,
         AND: {
@@ -380,13 +386,13 @@ export class ForumService {
       },
     });
 
-    if (userToForum) {
+    if (userToForum.length !== dto.userIds.length) {
       throw new BadRequestException(
-        `The user with id:${userToForum.userId} belongs to another forum`,
+        `One of the user does not belong to the forum`,
       );
     }
 
-    const data: UserToForum[] = dto.userIds.map((userId) => {
+    const data = dto.userIds.map((userId) => {
       return {
         forumId: forumId,
         userId,
@@ -401,11 +407,12 @@ export class ForumService {
 
   async getPostsOfForum(
     id: string,
-    { skip, take, order, search }: GetAllPostsDto,
+    { skip, take, order, search, status }: GetAllPostsDto,
   ) {
     const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
         forumId: id,
+        status,
       },
     ];
     if (search) {
@@ -444,11 +451,133 @@ export class ForumService {
           content: true,
           status: true,
           documents: true,
+          _count: {
+            select: {
+              comments: true,
+              likes: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              avatarUrl: true,
+              fullName: true,
+              email: true,
+              gender: true,
+            },
+          },
         },
       }),
     ]);
 
     return Pagination.of({ take, skip }, total, posts);
+  }
+
+  async createForumRequest(id: string, user: RequestUser) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: { id },
+      select: {
+        users: true,
+      },
+    });
+    const forumMember = forum.users.some(({ userId }) => userId === user.id);
+
+    if (forumMember) {
+      throw new BadRequestException('You are already member of this forum');
+    }
+
+    const request = await this.dbContext.userToForum.create({
+      data: {
+        userType: GroupUserType.MEMBER,
+        forumId: id,
+        status: ResourceStatus.PENDING,
+        userId: user.id,
+      },
+    });
+
+    this.logger.log('Created a forum request', { request });
+  }
+
+  async getForumRequests(id: string, user: RequestUser) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      select: {
+        modId: true,
+      },
+    });
+    if (user.id !== forum.modId) {
+      throw new BadRequestException('You do not have permission to view this');
+    }
+    const userToForums = this.dbContext.userToForum.findMany({
+      where: {
+        forumId: id,
+        status: ResourceStatus.PENDING,
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+            email: true,
+          },
+        },
+
+        userType: true,
+      },
+      orderBy: {
+        createdAt: Prisma.SortOrder.asc,
+      },
+    });
+
+    return userToForums;
+  }
+
+  async patchForumRequests(
+    forumId: string,
+    { userId, status }: ForumRequestDto,
+    user: RequestUser,
+  ) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: {
+        id: forumId,
+      },
+      select: {
+        modId: true,
+      },
+    });
+    if (user.id !== forum.modId) {
+      throw new BadRequestException('You do not have permission to view this');
+    }
+
+    const request = await this.dbContext.userToForum.findUniqueOrThrow({
+      where: {
+        userId_forumId: {
+          userId,
+          forumId,
+        },
+      },
+    });
+
+    if (!request || request.status === status) {
+      throw new BadRequestException('The request is invalid');
+    }
+
+    await this.dbContext.userToForum.update({
+      where: {
+        userId_forumId: {
+          userId,
+          forumId,
+        },
+      },
+      data: {
+        status,
+      },
+    });
+
+    this.logger.log('Patch forum request successfully', { request });
   }
 
   getForumsOfUser(userId: string): Promise<ForumResponse[]> {
