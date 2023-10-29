@@ -1,4 +1,4 @@
-import { ForumType, ResourceStatus } from '@prisma/client';
+import { ForumType, Gender, ResourceStatus, Topic, UserType } from '@prisma/client';
 
 export interface ForumResponse {
   id: string;
@@ -10,7 +10,16 @@ export interface ForumResponse {
   moderator: {
     id: string;
     fullName: string;
+    gender: Gender
+    dateOfBirth: Date;
+    avatarUrl: string;
+    faculty: {
+      id: string;
+      name: string;
+    },
+    type: UserType
   };
+  topics: Array<Object>
   _count: {
     users: number;
   };

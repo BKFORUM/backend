@@ -4,8 +4,10 @@ import { TopicService } from '@modules/topic';
 import { UserService } from '@modules/user';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef
 } from '@nestjs/common';
 import {
   Forum,
@@ -31,6 +33,7 @@ import { ForumResponse } from './interfaces';
 export class ForumService {
   constructor(
     private readonly dbContext: PrismaService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly topicService: TopicService,
   ) {}
@@ -446,5 +449,49 @@ export class ForumService {
     ]);
 
     return Pagination.of({ take, skip }, total, posts);
+  }
+
+  getForumsOfUser(userId: string): Promise<ForumResponse[]> {
+    return this.dbContext.forum.findMany({ where: { users: { every: { userId } } }, select: {
+      id: true,
+      type: true,
+      name: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      moderator: {
+        select: {
+          id: true,
+          fullName: true,
+          gender: true,
+          dateOfBirth: true,
+          avatarUrl: true,
+          faculty: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          type: true,
+        },
+      },
+      topics: {
+        select: {
+          topic: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      _count: {
+        select: {
+          users: true,
+        },
+      },
+    }, orderBy: {
+      type: 'desc'
+    } });
   }
 }
