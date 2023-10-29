@@ -118,7 +118,7 @@ export class ForumController {
   }
 
   @ApiOperation({
-    description: 'Import users to forum',
+    description: 'Add users to forum',
   })
   @ApiParam({
     name: 'id',
