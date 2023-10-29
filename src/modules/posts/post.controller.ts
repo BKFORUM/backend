@@ -21,6 +21,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { ReqUser } from '@common/decorator/request-user.dto';
 import { RequestUser, UUIDParam } from '@common/types';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @ApiBearerAuth()
 @Controller({
@@ -61,7 +62,11 @@ export class PostController {
 
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async updatePost(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
-    return this.postService.updatePost(id, user);
+  async updatePost(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+    @Body() body: UpdatePostDto,
+  ) {
+    return this.postService.updatePost(id, user, body);
   }
 }
