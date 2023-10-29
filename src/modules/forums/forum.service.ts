@@ -154,7 +154,7 @@ export class ForumService {
           ...forum,
           topics: forum.topics.map(({ topic }) => topic),
           yourStatus:
-            forum.users.find(({ userId }) => user.id === userId)?.status ??
+            forum.users.find(({ userId }) => user.id === userId).status ??
             NOT_MEMBER,
         };
       }),
@@ -411,10 +411,8 @@ export class ForumService {
       },
     });
 
-    if (userToForum.length !== dto.userIds.length) {
-      throw new BadRequestException(
-        `One of the user does not belong to the forum`,
-      );
+    if (userToForum.length > 0) {
+      throw new BadRequestException(`One of the user is already in the forum`);
     }
 
     const data = dto.userIds.map((userId) => {
