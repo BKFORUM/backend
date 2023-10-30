@@ -29,6 +29,7 @@ import {
 } from './dto';
 import { ForumRequestDto } from './dto/forum-request.dto';
 import { ForumResponse } from './interfaces';
+import { selectUser } from '@modules/user/utils';
 
 @Injectable()
 export class ForumService {
@@ -225,25 +226,12 @@ export class ForumService {
     });
   }
 
-  selectUser = {
-    select: {
-      id: true,
-      fullName: true,
-      phoneNumber: true,
-      address: true,
-      avatarUrl: true,
-      dateOfBirth: true,
-      email: true,
-      gender: true,
-    },
-  };
-
   async getForumById(id: string) {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id },
       select: {
         name: true,
-        moderator: this.selectUser,
+        moderator: selectUser,
         topics: {
           select: {
             topic: {
@@ -260,7 +248,7 @@ export class ForumService {
           },
           select: {
             id: true,
-            user: this.selectUser,
+            user: selectUser,
             _count: {
               select: {
                 comments: {
@@ -279,7 +267,7 @@ export class ForumService {
             status: ResourceStatus.ACTIVE,
           },
           select: {
-            user: this.selectUser,
+            user: selectUser,
           },
         },
       },

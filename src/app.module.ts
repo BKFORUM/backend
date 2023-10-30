@@ -12,8 +12,9 @@ import { NotificationGateway } from './notification/notification.gateway';
 import { FacultyModule } from './modules/faculty/faculty.module';
 import { CloudinaryModule } from '@modules/cloudinary';
 import { APP_FILTER } from '@nestjs/core';
-import { GlobalExceptionFilter } from './filters/global-exception.filter';
 import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.filter';
+import { FriendsModule } from './modules/friends';
+
 @Module({
   providers: [
     {
@@ -35,6 +36,7 @@ import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.f
     PostModule,
     TopicModule,
     FacultyModule,
+    FriendsModule,
   ],
   controllers: [AppController],
 })

@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { User, UserType } from '@prisma/client';
+import { ResourceStatus, User, UserType } from '@prisma/client';
 import { isNotEmpty } from 'class-validator';
 import { isEmpty } from 'lodash';
 import {
@@ -19,7 +19,7 @@ import { PaginatedResult, Pagination } from 'src/providers';
 import { RoleService } from '../roles';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { UserResponse } from './interfaces';
-import { filterByInOrNotInForum, filterBySearch } from './utils';
+import { filterByInOrNotInForum, filterBySearch, selectUser } from './utils';
 import { FacultyService } from '@modules/faculty';
 
 @Injectable()

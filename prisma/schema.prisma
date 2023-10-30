@@ -38,6 +38,16 @@ enum Gender {
   TBD
 }
 
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum ConversationType {
+  GROUP_CHAT
+  CHAT
+}
+
 model User {
   id           String   @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -54,7 +64,7 @@ model User {
   type         UserType @default(STUDENT)
   facultyId    String   @map("faculty_id") @db.Uuid
 
-  faculty          Faculty             @relation(fields: [facultyId], references: [id], map: "fk_user_faculty")
+  faculty          Faculty              @relation(fields: [facultyId], references: [id], map: "fk_user_faculty")
   roles            UserToRole[]
   forums           Forum[]
   userToForum      UserToForum[]
@@ -63,8 +73,10 @@ model User {
   likes            Like[]
   tokens           VerificationToken[]
   documents        PostDocument[]
-  sentRequests     Friendship[]        @relation("sender_friendships")
-  receivedRequests Friendship[]        @relation("receiver_friendships")
+  sentRequests     Friendship[]         @relation("sender_friendships")
+  receivedRequests Friendship[]         @relation("receiver_friendships")
+  conversations    UserToConversation[]
+  messages         Message[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -194,12 +206,12 @@ model Forum {
 }
 
 model UserToForum {
-  userId   String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
-  forumId  String         @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
+  userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  forumId   String         @default(dbgenerated("uuid_generate_v4()")) @map("forum_id") @db.Uuid
   createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  userType GroupUserType
-  status   ResourceStatus @default(ACTIVE)
+  userType  GroupUserType
+  status    ResourceStatus @default(ACTIVE)
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   forum Forum @relation(fields: [forumId], references: [id], onDelete: Cascade)
@@ -296,7 +308,7 @@ model PostDocument {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([fileUrl],map: "ixuq_file_url")
+  @@unique([fileUrl], map: "ixuq_file_url")
   @@map("post_document")
 }
 
@@ -314,4 +326,46 @@ model Friendship {
   @@unique([senderId, receiverId])
   @@unique([receiverId, senderId])
   @@map("friendship")
+}
+
+model Conversation {
+  id          String           @id(map: "pk_conversation") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  displayName String?          @map("display_name") @db.VarChar(50)
+  type        ConversationType @default(CHAT)
+
+  users    UserToConversation[]
+  messages Message[]
+
+  @@map("conversation")
+}
+
+model UserToConversation {
+  conversationId String   @map("conversation_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  displayName    String?  @map("display_name") @db.VarChar(50)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("user_to_conversation")
+}
+
+model Message {
+  id             String      @id(map: "pk_message") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  userId         String      @map("user_id") @db.Uuid
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  content        String      @db.Text
+  type           MessageType @default(TEXT)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("message")
 }
