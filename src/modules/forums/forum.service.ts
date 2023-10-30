@@ -154,7 +154,7 @@ export class ForumService {
           ...forum,
           topics: forum.topics.map(({ topic }) => topic),
           yourStatus:
-            forum.users.find(({ userId }) => user.id === userId).status ??
+            forum.users.find(({ userId }) => user.id === userId)?.status ??
             NOT_MEMBER,
         };
       }),
@@ -263,11 +263,7 @@ export class ForumService {
             user: this.selectUser,
             _count: {
               select: {
-                comments: {
-                  where: {
-                    status: ResourceStatus.ACTIVE,
-                  },
-                },
+                comments: true,
                 likes: true,
               },
             },
@@ -475,11 +471,7 @@ export class ForumService {
           documents: true,
           _count: {
             select: {
-              comments: {
-                where: {
-                  status: ResourceStatus.ACTIVE,
-                },
-              },
+              comments: true,
               likes: true,
             },
           },
@@ -608,7 +600,7 @@ export class ForumService {
 
   getForumsOfUser(userId: string): Promise<ForumResponse[]> {
     return this.dbContext.forum.findMany({
-      where: { users: { every: { userId } }, status: ResourceStatus.ACTIVE },
+      where: { users: { some: { userId } }, status: ResourceStatus.ACTIVE },
       select: {
         id: true,
         type: true,
