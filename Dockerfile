@@ -13,4 +13,6 @@ RUN npm run build
 
 EXPOSE 80
 
+EXPOSE 81
+
 CMD ["/bin/bash", "-c", "npx prisma migrate deploy;npm run start:dev"]
