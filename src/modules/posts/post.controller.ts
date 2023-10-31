@@ -1,4 +1,3 @@
-import { ReqUser } from '@common/decorator/request-user.dto';
 import { RequestUser, UUIDParam } from '@common/types';
 import { GetCommentDto } from '@modules/comments/dto';
 import { CreateCommentDto } from '@modules/comments/dto/create-comment.dto';
@@ -19,9 +18,10 @@ import {
 import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { CreatePostDto } from './dto/create-post.dto';
-import { GetAllPostsDto } from './dto/get-all-posts.decorator';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostService } from './post.service';
+import { GetAllPostsDto } from './dto/get-all-posts.dto';
+import { ReqUser } from '@common/decorator/request-user.decorator';
 
 @ApiBearerAuth()
 @Controller({
