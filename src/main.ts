@@ -16,8 +16,6 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
   app.enableCors();
@@ -39,6 +37,8 @@ async function bootstrap() {
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
+
+  const document = SwaggerModule.createDocument(app, config);
 
   SwaggerModule.setup('api', app, document, {
     customSiteTitle: 'Bk Forum',

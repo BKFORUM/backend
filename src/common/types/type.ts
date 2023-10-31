@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
-
+import { Socket } from 'socket.io';
 export type JwtPayload = {
   sub: string;
   username: string;
 };
+
+export type WebSocket = Socket & { [k: string]: any };
 
 export type RequestUser = {
   id: string;

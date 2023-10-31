@@ -158,6 +158,15 @@ export class AuthService {
     await this.mailService.sendResetPasswordToken(user.email, newToken.token);
   }
 
+  async verifyToken(token: string) {
+    const { id } = await this.jwtService.verifyAsync(token, {
+      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+    });
+
+    const user = await this.userService.findById(id);
+    return user;
+  }
+
   async resetPassword(body: ResetPasswordDto) {
     const { email, token, password } = body;
     const user = await this.userService.findByUsername(email);

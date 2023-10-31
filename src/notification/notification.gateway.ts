@@ -1,7 +1,14 @@
+import { WebSocket } from '@common/types';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { MessageService } from '@modules/message/message.service';
-import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
+  UseFilters,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+import {
+  ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -12,8 +19,10 @@ import {
   WsResponse,
 } from '@nestjs/websockets';
 import { Message } from '@prisma/client';
+import { Socket } from 'dgram';
 import { Server } from 'http';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
+import { WsJwtGuard } from 'src/guard/ws.guard';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -33,8 +42,13 @@ export class NotificationGateway {
   constructor(private readonly messageService: MessageService) {}
 
   @WebSocketServer() server: Server;
+
+  @UseGuards(WsJwtGuard)
   @SubscribeMessage('message')
-  async handleMessage(@MessageBody() body: CreateMessageDto) {
+  async handleMessage(
+    @ConnectedSocket() client: WebSocket,
+    @MessageBody() body: CreateMessageDto,
+  ) {
     const message = await this.messageService.create(body);
     this.server.emit('recMessage', message);
   }
