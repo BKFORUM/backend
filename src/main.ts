@@ -33,6 +33,8 @@ async function bootstrap() {
     }),
   );
 
+  app.setGlobalPrefix('api/v1');
+
   const { httpAdapter } = app.get(HttpAdapterHost);
 
   app.useGlobalFilters(new GlobalExceptionFilter());
