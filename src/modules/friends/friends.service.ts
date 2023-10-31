@@ -4,6 +4,7 @@ import { RequestUser } from '@common/types';
 import { selectUser } from '@modules/user/utils';
 import { ConversationType, ResourceStatus } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
+import { use } from 'passport';
 
 @Injectable()
 export class FriendsService {
@@ -134,5 +135,31 @@ export class FriendsService {
           : undefined,
       ]);
     });
+  }
+
+  async getFriendList(user: RequestUser) {
+    const friendList = await this.dbContext.friendship.findMany({
+      where: {
+        OR: [
+          {
+            receiverId: user.id,
+            status: ResourceStatus.ACTIVE,
+          },
+          {
+            senderId: user.id,
+            status: ResourceStatus.ACTIVE,
+          },
+        ],
+      },
+      select: {
+        sender: selectUser,
+      },
+    });
+
+    const friends = friendList
+      .filter(({ sender }) => sender.id !== user.id)
+      .map(({ sender }) => sender);
+
+    return friends;
   }
 }

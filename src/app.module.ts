@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './modules/user';
 import { AuthModule } from './modules/auth';
@@ -14,6 +13,8 @@ import { CloudinaryModule } from '@modules/cloudinary';
 import { APP_FILTER } from '@nestjs/core';
 import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.filter';
 import { FriendsModule } from './modules/friends';
+import { ConversationModule } from './modules/conversation/conversation.module';
+import { MessageModule } from './modules/message/message.module';
 
 @Module({
   providers: [
@@ -21,7 +22,6 @@ import { FriendsModule } from './modules/friends';
       provide: APP_FILTER,
       useClass: PrismaClientExceptionFilter,
     },
-    AppService,
     NotificationGateway,
   ],
   imports: [
@@ -37,6 +37,8 @@ import { FriendsModule } from './modules/friends';
     TopicModule,
     FacultyModule,
     FriendsModule,
+    ConversationModule,
+    MessageModule,
   ],
   controllers: [AppController],
 })

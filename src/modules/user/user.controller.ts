@@ -75,7 +75,6 @@ export class UserController {
   })
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(UserRole.ADMIN)
   async update(@Param() { id }: UUIDParam, @Body() user: UpdateUserDto) {
     return this.userService.updateUser(id, user);
   }
@@ -97,9 +96,7 @@ export class UserController {
   })
   @Get(':id/forums')
   @HttpCode(HttpStatus.OK)
-  async getForumsOfUser (
-    @Param() { id }: UUIDParam,
-  ) {
+  async getForumsOfUser(@Param() { id }: UUIDParam) {
     return this.forumService.getForumsOfUser(id);
   }
 }

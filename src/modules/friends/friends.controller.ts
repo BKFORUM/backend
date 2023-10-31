@@ -51,4 +51,12 @@ export class FriendsController {
   ) {
     return this.friendsService.patchFriendsRequest(id, user, status);
   }
+
+  @ApiOperation({
+    description: 'Get all friends of user',
+  })
+  @Get('me')
+  getUserFriendList(@ReqUser() user: RequestUser) {
+    return this.friendsService.getFriendList(user);
+  }
 }

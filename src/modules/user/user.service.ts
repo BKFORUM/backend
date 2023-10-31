@@ -288,6 +288,7 @@ export class UserService {
       gender,
       phoneNumber,
       facultyId,
+      avatarUrl,
     } = data;
 
     const rolesData = await this.roleService.checkRoles(roles);
@@ -337,6 +338,7 @@ export class UserService {
         gender,
         phoneNumber,
         facultyId,
+        avatarUrl,
         password: password ? await hashPassword(password) : undefined,
         refreshToken,
         roles: updateRoles,

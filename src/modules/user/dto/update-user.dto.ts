@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  IsUrl,
   MaxLength,
 } from 'class-validator';
 import { Gender, UserType } from '@prisma/client';
@@ -82,4 +83,11 @@ export class UpdateUserDto {
   @MaxLength(255)
   @IsString()
   address?: string;
+
+  @ApiPropertyOptional({
+    description: 'Url of avatar',
+  })
+  @IsOptional()
+  @IsUrl()
+  avatarUrl?: string;
 }
