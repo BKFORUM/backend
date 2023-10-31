@@ -1,3 +1,8 @@
+import { ReqUser } from '@common/decorator/request-user.dto';
+import { RequestUser, UUIDParam } from '@common/types';
+import { GetCommentDto } from '@modules/comments/dto';
+import { CreateCommentDto } from '@modules/comments/dto/create-comment.dto';
+import { CommentResponse } from '@modules/comments/interfaces';
 import {
   Body,
   Controller,
@@ -9,19 +14,14 @@ import {
   Post,
   Put,
   Query,
-  UploadedFiles,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { PostService } from './post.service';
-import { GetAllPostsDto } from './dto/get-all-posts.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { CreatePostDto } from './dto/create-post.dto';
-import { ReqUser } from '@common/decorator/request-user.decorator';
-import { RequestUser, UUIDParam } from '@common/types';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { GetAllPostsDto } from './dto/get-all-posts.decorator';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { PostService } from './post.service';
 
 @ApiBearerAuth()
 @Controller({
@@ -68,5 +68,30 @@ export class PostController {
     @Body() body: UpdatePostDto,
   ) {
     return this.postService.updatePost(id, user, body);
+  }
+
+  @ApiProperty({
+    description: 'Create a comment in a post',
+  })
+  @Post(':id/comments')
+  @HttpCode(HttpStatus.CREATED)
+  createComment(
+    @Param() { id }: UUIDParam,
+    @Body() dto: CreateCommentDto,
+    @ReqUser('id') userId: string,
+  ): Promise<CommentResponse> {
+    return this.postService.createComment(id, userId, dto);
+  }
+
+  @ApiProperty({
+    description: 'Get comments in a post',
+  })
+  @Get(':id/comments')
+  @HttpCode(HttpStatus.OK)
+  getComments(
+    @Param() { id }: UUIDParam,
+    @Query() dto: GetCommentDto,
+  ): Promise<CommentResponse[]> {
+    return this.postService.getComments(id, dto);
   }
 }

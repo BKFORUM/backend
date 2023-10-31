@@ -244,8 +244,6 @@ model Comment {
   updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
   postId    String         @default(dbgenerated("uuid_generate_v4()")) @map("post_id") @db.Uuid
-  status    ResourceStatus @default(PENDING)
-  title     String         @db.VarChar(100)
   content   String         @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
