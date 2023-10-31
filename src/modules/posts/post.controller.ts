@@ -18,7 +18,7 @@ import { GetAllPostsDto } from './dto/get-all-posts.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { CreatePostDto } from './dto/create-post.dto';
-import { ReqUser } from '@common/decorator/request-user.dto';
+import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { UpdatePostDto } from './dto/update-post.dto';

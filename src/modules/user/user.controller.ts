@@ -14,7 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { UserService } from './user.service';
-import { ReqUser } from '@common/decorator/request-user.dto';
+import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam, UserRole } from '@common/types';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from '@common/decorator';

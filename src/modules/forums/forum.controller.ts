@@ -1,4 +1,4 @@
-import { ReqUser } from '@common/decorator/request-user.dto';
+import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import {

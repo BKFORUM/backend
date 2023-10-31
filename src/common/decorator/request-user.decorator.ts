@@ -6,3 +6,10 @@ export const ReqUser = createParamDecorator(
     return propKey ? req.user[propKey] : req.user;
   },
 );
+
+export const ReqSocketUser = createParamDecorator(
+  (propKey: string, ctx: ExecutionContext) => {
+    const client = ctx.switchToWs().getClient();
+    return propKey ? client.user[propKey] : client.user;
+  },
+);

@@ -4,12 +4,13 @@ import { UpdateMessageDto } from './dto/update-message.dto';
 import { PrismaService } from 'src/database/services';
 import { selectUser } from '@modules/user/utils';
 import { WsException } from '@nestjs/websockets';
+import { RequestUser } from '@common/types';
 
 @Injectable()
 export class MessageService {
   constructor(private readonly dbContext: PrismaService) {}
-  async create(createMessageDto: CreateMessageDto) {
-    const { conversationId, userId: reqUser } = createMessageDto;
+  async create(createMessageDto: CreateMessageDto, reqUser: string) {
+    const { conversationId } = createMessageDto;
     const conversation = await this.dbContext.conversation.findUnique({
       where: {
         id: conversationId,
@@ -31,6 +32,7 @@ export class MessageService {
     const message = await this.dbContext.message.create({
       data: {
         ...createMessageDto,
+        userId: reqUser,
       },
     });
 

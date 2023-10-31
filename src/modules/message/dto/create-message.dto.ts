@@ -11,13 +11,6 @@ export class CreateMessageDto {
   conversationId: string;
 
   @ApiProperty({
-    description: 'Id of the sender',
-    example: 'b9aee9b6-16fa-4bb4-a3ff-d664d5b720eb',
-  })
-  @IsUUID()
-  userId: string;
-
-  @ApiProperty({
     description: 'Content of the message',
     example: 'Hello world',
   })
