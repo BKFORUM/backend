@@ -32,7 +32,7 @@ export class PostService {
       whereConditions.push({
         forum: {
           users: {
-            every: {
+            some: {
               userId: user.id,
               status: ResourceStatus.ACTIVE,
             },
