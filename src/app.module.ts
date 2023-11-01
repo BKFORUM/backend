@@ -7,7 +7,6 @@ import { RoleModule } from './modules/roles';
 import { ForumModule } from './modules/forums';
 import { PostModule } from './modules/posts';
 import { TopicModule } from '@modules/topic';
-import { NotificationGateway } from './notification/notification.gateway';
 import { FacultyModule } from './modules/faculty/faculty.module';
 import { CloudinaryModule } from '@modules/cloudinary';
 import { APP_FILTER } from '@nestjs/core';
@@ -15,6 +14,8 @@ import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.f
 import { FriendsModule } from './modules/friends';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { MessageModule } from './modules/message/message.module';
+import { NotificationGateway } from './notification';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   providers: [
@@ -22,12 +23,12 @@ import { MessageModule } from './modules/message/message.module';
       provide: APP_FILTER,
       useClass: PrismaClientExceptionFilter,
     },
-    NotificationGateway,
   ],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    NotificationModule,
     CloudinaryModule,
     AuthModule,
     UserModule,

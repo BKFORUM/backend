@@ -1,14 +1,17 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 
 import { RequestUser } from '@common/types';
 import { selectUser } from '@modules/user/utils';
 import { ConversationType, ResourceStatus } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
-import { use } from 'passport';
+import { NotificationGateway } from 'src/notification';
 
 @Injectable()
 export class FriendsService {
-  constructor(private readonly dbContext: PrismaService) {}
+  constructor(
+    private readonly notificationGateway: NotificationGateway,
+    private readonly dbContext: PrismaService,
+  ) {}
   async sendFriendRequests({ id: senderId }: RequestUser, receiverId: string) {
     const existedFriendship = await this.dbContext.friendship.findFirst({
       where: {
@@ -36,6 +39,11 @@ export class FriendsService {
         status: ResourceStatus.PENDING,
       },
     });
+
+    this.notificationGateway.server.emit(
+      'friendRequest',
+      `You receive a friend request from ${senderId}`,
+    );
 
     return request;
   }

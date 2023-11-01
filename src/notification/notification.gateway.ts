@@ -40,6 +40,8 @@ export class NotificationGateway {
 
   @WebSocketServer() server: Server;
 
+  afterInit() {}
+
   @SubscribeMessage('message')
   async handleMessage(
     @ReqSocketUser() user: RequestUser,
