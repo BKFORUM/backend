@@ -273,13 +273,26 @@ export class ForumService {
     return forum;
   }
 
-  async updateForum(forumId: string, dto: UpdateForumDto): Promise<void> {
+  async updateForum(
+    forumId: string,
+    dto: UpdateForumDto,
+    user: RequestUser,
+  ): Promise<void> {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id: forumId },
       include: {
         topics: true,
       },
     });
+    const isAbleEdit =
+      user.roles.includes(UserRole.ADMIN) || user.id === forum.modId;
+
+    if (!isAbleEdit) {
+      throw new BadRequestException(
+        'You do not have permission to update this forum',
+      );
+    }
+
     const topicForumIds = forum.topics.map((topic) => topic.topicId);
 
     await Promise.all([

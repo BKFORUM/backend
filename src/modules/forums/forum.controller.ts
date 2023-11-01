@@ -85,8 +85,9 @@ export class ForumController {
   updateForum(
     @Param() { id }: UUIDParam,
     @Body() dto: UpdateForumDto,
+    @ReqUser() user: RequestUser,
   ): Promise<void> {
-    return this.forumService.updateForum(id, dto);
+    return this.forumService.updateForum(id, dto, user);
   }
 
   @ApiOperation({
