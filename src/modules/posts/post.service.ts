@@ -18,9 +18,7 @@ import { PostResponse } from './interfaces/post-response.interface';
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name);
-  constructor(
-    private dbContext: PrismaService
-  ) {}
+  constructor(private dbContext: PrismaService) {}
 
   async getAllPosts(
     query: GetAllPostsDto,
@@ -36,6 +34,7 @@ export class PostService {
           users: {
             every: {
               userId: user.id,
+              status: ResourceStatus.ACTIVE,
             },
           },
         },
@@ -71,7 +70,9 @@ export class PostService {
           id: true,
           forum: {
             select: {
+              id: true,
               name: true,
+              modId: true,
             },
           },
           content: true,
@@ -347,7 +348,11 @@ export class PostService {
     this.logger.log('Created a post record', { post });
   }
 
-  createComment(id: string, userId: string, dto: CreateCommentDto): Promise<CommentResponse> {
+  createComment(
+    id: string,
+    userId: string,
+    dto: CreateCommentDto,
+  ): Promise<CommentResponse> {
     return this.dbContext.comment.create({
       data: {
         postId: id,
@@ -393,8 +398,8 @@ export class PostService {
         },
       },
       orderBy: {
-        createdAt: Prisma.SortOrder.asc
-      }
+        createdAt: Prisma.SortOrder.asc,
+      },
     });
   }
 }

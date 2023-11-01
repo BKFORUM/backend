@@ -95,6 +95,7 @@ export class ForumService {
           type: true,
           name: true,
           status: true,
+          avatarUrl: true,
           createdAt: true,
           updatedAt: true,
           users: {
@@ -231,6 +232,8 @@ export class ForumService {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id },
       select: {
+        id: true,
+        avatarUrl: true,
         name: true,
         moderator: selectUser,
         topics: {
@@ -597,6 +600,18 @@ export class ForumService {
       throw new BadRequestException('The request is invalid');
     }
 
+    if (status === ResourceStatus.DELETED) {
+      await this.dbContext.userToForum.delete({
+        where: {
+          userId_forumId: {
+            userId,
+            forumId,
+          },
+        },
+      });
+      return;
+    }
+
     await this.dbContext.userToForum.update({
       where: {
         userId_forumId: {
@@ -614,9 +629,13 @@ export class ForumService {
 
   getForumsOfUser(userId: string): Promise<ForumResponse[]> {
     return this.dbContext.forum.findMany({
-      where: { users: { some: { userId } }, status: ResourceStatus.ACTIVE },
+      where: {
+        users: { every: { userId, status: ResourceStatus.ACTIVE } },
+        status: ResourceStatus.ACTIVE,
+      },
       select: {
         id: true,
+        avatarUrl: true,
         type: true,
         name: true,
         status: true,
