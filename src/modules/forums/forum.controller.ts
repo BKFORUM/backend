@@ -80,7 +80,6 @@ export class ForumController {
     name: 'id',
     type: String,
   })
-  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Put(':id')
   updateForum(

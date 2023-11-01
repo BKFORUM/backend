@@ -163,7 +163,7 @@ export class ForumService {
   }
 
   async createForum(body: CreateForumDto, user: RequestUser) {
-    const { moderatorId, name, type, topicIds, userIds } = body;
+    const { moderatorId, name, type, topicIds, userIds, avatarUrl } = body;
     const isAdmin = user.roles.includes(UserRole.ADMIN);
     const isHomeRoom = type === ForumType.HOMEROOM;
     const isAbleCreateForumType = (isAdmin && isHomeRoom) || !isHomeRoom;
@@ -208,6 +208,7 @@ export class ForumService {
         modId: moderatorId,
         status: isAdmin ? ResourceStatus.ACTIVE : ResourceStatus.PENDING,
         type,
+        avatarUrl,
         users: {
           create: {
             userType: GroupUserType.MODERATOR,
@@ -286,7 +287,19 @@ export class ForumService {
       this.updateName(forumId, dto.name),
       this.updateType(forumId, dto.type),
       this.updateStatus(forumId, dto.status),
+      this.updateAvatar(forumId, dto.avatarUrl),
     ]);
+  }
+
+  async updateAvatar(forumId: string, avatarUrl: string) {
+    if (avatarUrl) {
+      await this.dbContext.forum.update({
+        where: { id: forumId },
+        data: {
+          avatarUrl,
+        },
+      });
+    }
   }
 
   async updateTopics(

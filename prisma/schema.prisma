@@ -196,6 +196,7 @@ model Forum {
   modId     String         @map("mod_id") @db.Uuid
   status    ResourceStatus @default(PENDING)
   type      ForumType      @default(HOMEROOM)
+  avatarUrl String?        @db.Text          @map("avatar_url") 
 
   moderator User           @relation(fields: [modId], references: [id], onDelete: Cascade)
   users     UserToForum[]
@@ -332,6 +333,7 @@ model Conversation {
   updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   displayName String?          @map("display_name") @db.VarChar(50)
   type        ConversationType @default(CHAT)
+  avatarUrl   String?           @db.Text @map("avatar_url")
 
   users    UserToConversation[]
   messages Message[]

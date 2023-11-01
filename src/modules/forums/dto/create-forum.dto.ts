@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ForumType } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  IsUrl,
   ValidateIf,
 } from 'class-validator';
 import { uniq } from 'lodash';
@@ -64,4 +65,12 @@ export class CreateForumDto {
   @IsArray()
   @Transform(({ value }) => uniq(value))
   userIds: string[];
+
+  @ApiPropertyOptional({
+    description: 'Url of avatar',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsUrl()
+  avatarUrl?: string;
 }

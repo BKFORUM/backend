@@ -1,5 +1,5 @@
 import { ReqSocketUser } from '@common/decorator/request-user.decorator';
-import { RequestUser, WebSocket } from '@common/types';
+import { RequestUser, UUIDParam, WebSocket } from '@common/types';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { MessageService } from '@modules/message/message.service';
 import {
@@ -46,7 +46,16 @@ export class NotificationGateway {
     @MessageBody() body: CreateMessageDto,
   ) {
     const message = await this.messageService.create(body, user.id);
-    this.server.emit('recMessage', message);
+    this.server.emit('messageReceived', message);
+  }
+
+  @SubscribeMessage('delMessage')
+  async handleDeleteMessage(
+    @ReqSocketUser() user: RequestUser,
+    @MessageBody() { id }: UUIDParam,
+  ) {
+    const message = await this.messageService.delete(user, id);
+    this.server.emit('messageDeleted', message);
   }
 
   @SubscribeMessage('tag')

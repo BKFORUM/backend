@@ -51,7 +51,27 @@ export class MessageService {
     return `This action updates a #${id} message`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} message`;
+  async delete(user: RequestUser, messageId: string) {
+    const message = await this.dbContext.message.findUnique({
+      where: {
+        id: messageId,
+      },
+      select: {
+        userId: true,
+        conversationId: true,
+      },
+    });
+
+    if (!message || message.userId !== user.id) {
+      throw new BadRequestException('You cannot delete this message');
+    }
+
+    await this.dbContext.message.delete({
+      where: {
+        id: messageId,
+      },
+    });
+
+    return message;
   }
 }
