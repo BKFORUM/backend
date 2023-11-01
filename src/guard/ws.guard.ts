@@ -5,6 +5,7 @@ import {
   ExecutionContext,
   Injectable,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 
@@ -26,7 +27,7 @@ export class WsJwtGuard implements CanActivate {
 
       return Boolean(user);
     } catch (err) {
-      throw new WsException(err.message);
+      throw new UnauthorizedException();
     }
   }
 }

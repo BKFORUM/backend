@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Catch,
   HttpException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
 
@@ -12,6 +13,7 @@ export class WebsocketExceptionsFilter extends BaseWsExceptionFilter {
     const ctx = host.switchToWs();
     const client = ctx.getClient();
 
+    console.log(exception);
     if (exception instanceof WsException) {
       client.emit('error', exception.getError());
     } else if (exception instanceof HttpException) {

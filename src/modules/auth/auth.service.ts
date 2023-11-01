@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from '../user';
 import { JwtService } from '@nestjs/jwt';
@@ -159,11 +160,11 @@ export class AuthService {
   }
 
   async verifyToken(token: string) {
-    const { id } = await this.jwtService.verifyAsync(token, {
+    const claims = await this.jwtService.verifyAsync(token, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
     });
 
-    const user = await this.userService.findById(id);
+    const user = await this.userService.findById(claims.id);
     return user;
   }
 
