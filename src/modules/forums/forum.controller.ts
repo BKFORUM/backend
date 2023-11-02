@@ -124,14 +124,14 @@ export class ForumController {
     name: 'id',
     type: String,
   })
-  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @Post(':id/users')
   addUsersToForum(
     @Body() dto: AddUsersToForumDto,
     @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
   ): Promise<void> {
-    return this.forumService.addUsersToForum(id, dto);
+    return this.forumService.addUsersToForum(id, dto, user);
   }
 
   @ApiOperation({

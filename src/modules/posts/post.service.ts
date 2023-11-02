@@ -137,6 +137,9 @@ export class PostService {
           id: true,
           forum: {
             select: {
+              id: true,
+              avatarUrl: true,
+              modId: true,
               name: true,
             },
           },

@@ -8,6 +8,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ForbiddenException,
   forwardRef,
 } from '@nestjs/common';
 import {
@@ -400,6 +401,7 @@ export class ForumService {
   async addUsersToForum(
     forumId: string,
     dto: AddUsersToForumDto,
+    user: RequestUser,
   ): Promise<void> {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id: forumId },
@@ -409,6 +411,13 @@ export class ForumService {
       throw new BadRequestException(
         'This forum is pending and needs to be approved to add users',
       );
+    }
+
+    const isAbleAddUsers =
+      user.id === forum.modId || user.roles.includes(UserRole.ADMIN);
+
+    if (!isAbleAddUsers) {
+      throw new ForbiddenException();
     }
 
     await this.userService.validateUserIds(dto.userIds);
@@ -486,6 +495,14 @@ export class ForumService {
           content: true,
           status: true,
           documents: true,
+          forum: {
+            select: {
+              id: true,
+              name: true,
+              modId: true,
+              avatarUrl: true,
+            },
+          },
           _count: {
             select: {
               comments: true,
