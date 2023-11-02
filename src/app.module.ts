@@ -16,6 +16,7 @@ import { ConversationModule } from './modules/conversation/conversation.module';
 import { MessageModule } from './modules/message/message.module';
 import { NotificationGateway } from './notification';
 import { NotificationModule } from './notification/notification.module';
+import { CommentModule } from '@modules/comments/comment.module';
 
 @Module({
   providers: [
@@ -40,6 +41,7 @@ import { NotificationModule } from './notification/notification.module';
     FriendsModule,
     ConversationModule,
     MessageModule,
+    CommentModule
   ],
   controllers: [AppController],
 })
