@@ -73,6 +73,7 @@ export class PostService {
               id: true,
               name: true,
               modId: true,
+              avatarUrl: true,
             },
           },
           content: true,
@@ -279,6 +280,14 @@ export class PostService {
             email: true,
             fullName: true,
             avatarUrl: true,
+          },
+        },
+        forum: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            modId: true,
           },
         },
       },
