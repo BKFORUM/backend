@@ -82,11 +82,13 @@ export class ForumService {
       this.dbContext.forum.count({
         where: {
           AND: whereConditions,
+          status: ResourceStatus.ACTIVE
         },
       }),
       this.dbContext.forum.findMany({
         where: {
           AND: whereConditions,
+          status: ResourceStatus.ACTIVE
         },
         skip,
         orderBy,
