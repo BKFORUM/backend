@@ -76,7 +76,6 @@ model User {
   sentRequests     Friendship[]         @relation("sender_friendships")
   receivedRequests Friendship[]         @relation("receiver_friendships")
   conversations    UserToConversation[]
-  messages         Message[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -334,14 +333,17 @@ model Conversation {
   displayName String?          @map("display_name") @db.VarChar(50)
   type        ConversationType @default(CHAT)
   avatarUrl   String?           @db.Text @map("avatar_url")
+  lastMessageId String?       @db.Uuid() @map("last_message_id") @unique
 
   users    UserToConversation[]
   messages Message[]
+  lastMessage Message? @relation("conversation_last_message",fields: [lastMessageId],references: [id])
 
   @@map("conversation")
 }
 
 model UserToConversation {
+  id         String           @id(map: "pk_user_to_conversation") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   conversationId String   @map("conversation_id") @db.Uuid
   userId         String   @map("user_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -350,8 +352,9 @@ model UserToConversation {
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     Message[]
 
-  @@id([conversationId, userId])
+  @@unique([conversationId, userId])
   @@map("user_to_conversation")
 }
 
@@ -365,7 +368,9 @@ model Message {
   type           MessageType @default(TEXT)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastMessageOfConversation Conversation? @relation("conversation_last_message")
+  author         UserToConversation         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
 
   @@map("message")
 }

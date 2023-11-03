@@ -1,3 +1,4 @@
+import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
 import { GetCommentDto } from '@modules/comments/dto';
 import { CreateCommentDto } from '@modules/comments/dto/create-comment.dto';
@@ -10,19 +11,20 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Like } from '@prisma/client';
 import { AccessTokenGuard } from 'src/guard';
 import { CreatePostDto } from './dto/create-post.dto';
+import { GetAllPostsDto } from './dto/get-all-posts.dto';
+import { PatchPostRequestDto } from './dto/patch-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostService } from './post.service';
-import { GetAllPostsDto } from './dto/get-all-posts.dto';
-import { ReqUser } from '@common/decorator/request-user.decorator';
-import { Like } from '@prisma/client';
 
 @ApiBearerAuth()
 @Controller({
@@ -69,6 +71,16 @@ export class PostController {
     @Body() body: UpdatePostDto,
   ) {
     return this.postService.updatePost(id, user, body);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async patchPostStatus(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+    @Body() body: PatchPostRequestDto,
+  ) {
+    return this.postService.patchPostStatus(id, user, body.status);
   }
 
   @ApiProperty({

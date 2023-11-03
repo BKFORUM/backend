@@ -1,5 +1,4 @@
-import { ReqSocketUser } from '@common/decorator/request-user.decorator';
-import { RequestUser, UUIDParam, WebSocket } from '@common/types';
+import { RequestUser, UUIDParam, AuthenticatedSocket } from '@common/types';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { MessageService } from '@modules/message/message.service';
 import {
@@ -11,14 +10,16 @@ import {
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
-
 import { Server } from 'http';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
+import { GatewaySessionManager } from './notification.session';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -35,8 +36,19 @@ import { WsJwtGuard } from 'src/guard/ws.guard';
   }),
 )
 @UseGuards(WsJwtGuard)
-export class NotificationGateway {
-  constructor(private readonly messageService: MessageService) {}
+export class NotificationGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
+  constructor(
+    private readonly messageService: MessageService,
+    private readonly sessions: GatewaySessionManager,
+  ) {}
+  handleConnection(client: AuthenticatedSocket) {
+    this.sessions.setUserSocket(client.user.id, client);
+  }
+  handleDisconnect(client: AuthenticatedSocket) {
+    this.sessions.removeUserSocket(client.user.id);
+  }
 
   @WebSocketServer() server: Server;
 
@@ -44,19 +56,19 @@ export class NotificationGateway {
 
   @SubscribeMessage('message')
   async handleMessage(
-    @ReqSocketUser() user: RequestUser,
+    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: CreateMessageDto,
   ) {
-    const message = await this.messageService.create(body, user.id);
+    const message = await this.messageService.create(body, client.user.id);
     this.server.emit('messageReceived', message);
   }
 
   @SubscribeMessage('delMessage')
   async handleDeleteMessage(
-    @ReqSocketUser() user: RequestUser,
+    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() { id }: UUIDParam,
   ) {
-    const message = await this.messageService.delete(user, id);
+    const message = await this.messageService.delete(client.user, id);
     this.server.emit('messageDeleted', message);
   }
 
