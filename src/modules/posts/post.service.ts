@@ -4,7 +4,7 @@ import { GetCommentDto } from '@modules/comments/dto';
 import { CreateCommentDto } from '@modules/comments/dto/create-comment.dto';
 import { CommentResponse } from '@modules/comments/interfaces';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { GroupUserType, Prisma, ResourceStatus } from '@prisma/client';
+import { GroupUserType, Like, Prisma, ResourceStatus } from '@prisma/client';
 import { isEmpty } from 'class-validator';
 import { differenceBy } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
@@ -448,5 +448,57 @@ export class PostService {
         createdAt: Prisma.SortOrder.asc,
       },
     });
+  }
+
+  async likePost(postId: string, userId: string): Promise<Like> {
+    const haveAlreadyLiked = await this.dbContext.like.findUnique({
+      where: {
+        userId_postId: {
+          postId,
+          userId,
+        },
+      },
+    });
+    if (haveAlreadyLiked) {
+      throw new BadRequestException('This user have already liked this post');
+    }
+
+    await this.checkIfUserIsInTheSamePostForum(postId, userId);
+
+    return this.dbContext.like.create({
+      data: {
+        postId,
+        userId,
+      },
+      include: {
+        user: true,
+      },
+    });
+  }
+
+  async unlikePost(postId: string, userId: string): Promise<void> {
+    await this.checkIfUserIsInTheSamePostForum(postId, userId);
+    await this.dbContext.like.delete({ where: { userId_postId: { postId, userId } } });
+  }
+
+  private async checkIfUserIsInTheSamePostForum(id: string, userId: string) {
+    const post = await this.dbContext.post.findUniqueOrThrow({
+      where: { id },
+    });
+    const isInSameForum = await this.dbContext.user.findFirst({
+      where: {
+        id: userId,
+        forums: {
+          some: {
+            id: post.forumId,
+          },
+        },
+      },
+    });
+    if (!isInSameForum) {
+      throw new BadRequestException(
+        "This user is not in the same post's forum",
+      );
+    }
   }
 }

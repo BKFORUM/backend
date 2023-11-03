@@ -1,3 +1,4 @@
+import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
 import { GetCommentDto } from '@modules/comments/dto';
 import { CreateCommentDto } from '@modules/comments/dto/create-comment.dto';
@@ -17,13 +18,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Like } from '@prisma/client';
 import { AccessTokenGuard } from 'src/guard';
 import { CreatePostDto } from './dto/create-post.dto';
+import { GetAllPostsDto } from './dto/get-all-posts.dto';
+import { PatchPostRequestDto } from './dto/patch-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostService } from './post.service';
-import { GetAllPostsDto } from './dto/get-all-posts.dto';
-import { ReqUser } from '@common/decorator/request-user.decorator';
-import { PatchPostRequestDto } from './dto/patch-post.dto';
 
 @ApiBearerAuth()
 @Controller({
@@ -105,5 +106,23 @@ export class PostController {
     @Query() dto: GetCommentDto,
   ): Promise<CommentResponse[]> {
     return this.postService.getComments(id, dto);
+  }
+
+  @ApiProperty({
+    description: 'Like a post'
+  })
+  @Post(':id/likes')
+  @HttpCode(HttpStatus.CREATED)
+  likePost(@Param() { id }: UUIDParam, @ReqUser('id') userId: string): Promise<Like> {
+    return this.postService.likePost(id, userId);
+  }
+
+  @ApiProperty({
+    description: 'Unlike a post'
+  })
+  @Delete(':id/likes')
+  @HttpCode(HttpStatus.CREATED)
+  unlikePost(@Param() { id }: UUIDParam, @ReqUser('id') userId: string): Promise<void> {
+    return this.postService.unlikePost(id, userId);
   }
 }
