@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -22,6 +23,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PostService } from './post.service';
 import { GetAllPostsDto } from './dto/get-all-posts.dto';
 import { ReqUser } from '@common/decorator/request-user.decorator';
+import { PatchPostRequestDto } from './dto/patch-post.dto';
 
 @ApiBearerAuth()
 @Controller({
@@ -68,6 +70,16 @@ export class PostController {
     @Body() body: UpdatePostDto,
   ) {
     return this.postService.updatePost(id, user, body);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async patchPostStatus(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+    @Body() body: PatchPostRequestDto,
+  ) {
+    return this.postService.patchPostStatus(id, user, body.status);
   }
 
   @ApiProperty({

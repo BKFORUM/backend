@@ -1,9 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { ConversationService } from './conversation.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
-
-@Controller('conversation')
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AccessTokenGuard } from 'src/guard';
+import { ReqUser } from '@common/decorator/request-user.decorator';
+import { RequestUser } from '@common/types';
+import { GetConversationDto } from './dto/get-conversation.dto';
+@ApiBearerAuth()
+@UseGuards(AccessTokenGuard)
+@ApiTags('Conversation')
+@Controller('conversations')
 export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
 
@@ -12,9 +29,12 @@ export class ConversationController {
     return this.conversationService.create(createConversationDto);
   }
 
+  @ApiOperation({
+    description: 'Get all conversations of the user',
+  })
   @Get()
-  findAll() {
-    return this.conversationService.findAll();
+  getAll(@ReqUser() user: RequestUser, @Query() query: GetConversationDto) {
+    return this.conversationService.getAllConversations(user, query);
   }
 
   @Get(':id')
@@ -23,7 +43,10 @@ export class ConversationController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateConversationDto: UpdateConversationDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateConversationDto: UpdateConversationDto,
+  ) {
     return this.conversationService.update(+id, updateConversationDto);
   }
 

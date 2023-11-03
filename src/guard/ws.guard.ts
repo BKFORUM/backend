@@ -1,4 +1,4 @@
-import { WebSocket } from '@common/types';
+import { AuthenticatedSocket, RequestUser } from '@common/types';
 import { AuthService } from '@modules/auth';
 import {
   CanActivate,
@@ -7,7 +7,6 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class WsJwtGuard implements CanActivate {
@@ -17,13 +16,18 @@ export class WsJwtGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
-      const client: WebSocket = context.switchToWs().getClient<WebSocket>();
+      const client: AuthenticatedSocket = context
+        .switchToWs()
+        .getClient<AuthenticatedSocket>();
       const authToken =
         client.handshake?.headers?.authorization.split(' ')[1] ||
         client.handshake?.headers?.authorization;
 
       const user = await this.authService.verifyToken(authToken);
-      client.user = user;
+      client.user = {
+        ...user,
+        roles: user.roles.map(({ name }) => name),
+      };
       return Boolean(user);
     } catch (err) {
       this.logger.error(err);

@@ -6,7 +6,7 @@ export type JwtPayload = {
   username: string;
 };
 
-export type WebSocket = Socket & { [k: string]: any };
+export type AuthenticatedSocket = Socket & { user: RequestUser };
 
 export type RequestUser = {
   id: string;

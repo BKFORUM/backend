@@ -201,6 +201,41 @@ export class PostService {
     this.logger.log('Delete a post record', { post });
   }
 
+  async patchPostStatus(
+    id: string,
+    { id: userId }: RequestUser,
+    status: ResourceStatus,
+  ) {
+    const post = await this.dbContext.post.findUniqueOrThrow({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        forum: {
+          select: {
+            modId: true,
+          },
+        },
+        documents: true,
+      },
+    });
+
+    const isAbleUpdate = userId === post.forum.modId;
+
+    if (!isAbleUpdate) {
+      throw new BadRequestException('You do not have permission');
+    }
+
+    await this.dbContext.post.update({
+      where: {
+        id,
+      },
+      data: {
+        status,
+      },
+    });
+  }
+
   async updatePost(
     id: string,
     { id: userId }: RequestUser,
