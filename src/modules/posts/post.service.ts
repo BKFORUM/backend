@@ -84,6 +84,12 @@ export class PostService {
               fullName: true,
             },
           },
+          _count: {
+            select: {
+              likes: true,
+              comments: true
+            }
+          },
           documents: {
             select: {
               id: true,
@@ -151,6 +157,12 @@ export class PostService {
               avatarUrl: true,
               fullName: true,
             },
+          },
+          _count: {
+            select: {
+              comments: true,
+              likes:  true
+            }
           },
           documents: {
             select: {
