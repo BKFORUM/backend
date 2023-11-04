@@ -175,6 +175,7 @@ export class PostService {
               likes: true,
             },
           },
+          likes: { where: { userId: id } },
           documents: {
             select: {
               id: true,
@@ -187,7 +188,15 @@ export class PostService {
       }),
     ]);
 
-    return Pagination.of({ take, skip }, total, posts);
+    const postResponse = posts.map((post) => {
+      return {
+        ...post,
+        likedAt: post.likes.length ? first(post.likes).createdAt : null
+      }
+      
+    })
+
+    return Pagination.of({ take, skip }, total, postResponse);
   }
 
   async deletePost(id: string, { id: userId, roles }: RequestUser) {
