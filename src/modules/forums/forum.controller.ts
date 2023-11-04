@@ -142,8 +142,9 @@ export class ForumController {
   async getPostsOfForum(
     @Param() { id }: UUIDParam,
     @Query() query: GetAllPostsDto,
+    @ReqUser('id') userId: string
   ) {
-    return await this.forumService.getPostsOfForum(id, query);
+    return await this.forumService.getPostsOfForum(id, query, userId);
   }
 
   @ApiOperation({
