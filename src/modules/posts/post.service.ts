@@ -109,7 +109,7 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes) : null
+        likedAt: post.likes.length ? first(post.likes).createdAt : null
       }
       
     })
