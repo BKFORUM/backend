@@ -16,10 +16,12 @@ import {
   WebSocketServer,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Server } from 'http';
+import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
 import { GatewaySessionManager } from './notification.session';
+import { WSAuthMiddleware } from 'src/middleware';
+import { AuthService } from '@modules/auth';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -42,6 +44,7 @@ export class NotificationGateway
   constructor(
     private readonly messageService: MessageService,
     private readonly sessions: GatewaySessionManager,
+    private readonly authService: AuthService,
   ) {}
   handleConnection(client: AuthenticatedSocket) {
     this.sessions.setUserSocket(client.user.id, client);
@@ -52,7 +55,11 @@ export class NotificationGateway
 
   @WebSocketServer() server: Server;
 
-  afterInit() {}
+  afterInit(server: Server) {
+    const middle = WSAuthMiddleware(this.authService);
+    server.use(middle);
+    console.log(`WS ${NotificationGateway.name} init`);
+  }
 
   @SubscribeMessage('message')
   async handleMessage(
