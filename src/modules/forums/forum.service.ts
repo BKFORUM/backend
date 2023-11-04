@@ -2,13 +2,14 @@ import { NOT_MEMBER, RequestUser, UserRole } from '@common/types';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import { TopicService } from '@modules/topic';
 import { UserService } from '@modules/user';
+import { selectUser } from '@modules/user/utils';
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   Logger,
   NotFoundException,
-  ForbiddenException,
   forwardRef,
 } from '@nestjs/common';
 import {
@@ -18,7 +19,7 @@ import {
   Prisma,
   ResourceStatus,
 } from '@prisma/client';
-import { difference } from 'lodash';
+import { difference, first } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -30,7 +31,6 @@ import {
 } from './dto';
 import { ForumRequestDto } from './dto/forum-request.dto';
 import { ForumResponse } from './interfaces';
-import { selectUser } from '@modules/user/utils';
 
 @Injectable()
 export class ForumService {
@@ -453,6 +453,7 @@ export class ForumService {
   async getPostsOfForum(
     id: string,
     { skip, take, order, search, status }: GetAllPostsDto,
+    userId: string,
   ) {
     const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
@@ -503,6 +504,9 @@ export class ForumService {
               avatarUrl: true,
             },
           },
+          likes: {
+            where: { userId },
+          },
           _count: {
             select: {
               comments: true,
@@ -522,7 +526,15 @@ export class ForumService {
       }),
     ]);
 
-    return Pagination.of({ take, skip }, total, posts);
+    const postResponse = posts.map((post) => {
+      return {
+        ...post,
+        likedAt: post.likes.length ? first(post.likes).createdAt : null
+      }
+      
+    })
+
+    return Pagination.of({ take, skip }, total, postResponse);
   }
 
   async createForumRequest(id: string, user: RequestUser) {
