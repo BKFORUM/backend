@@ -6,7 +6,7 @@ import { CommentResponse } from '@modules/comments/interfaces';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { GroupUserType, Like, Prisma, ResourceStatus } from '@prisma/client';
 import { isEmpty } from 'class-validator';
-import { differenceBy } from 'lodash';
+import { differenceBy, first } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
@@ -84,11 +84,14 @@ export class PostService {
               fullName: true,
             },
           },
+          likes: {
+            where: { userId: user.id },
+          },
           _count: {
             select: {
               likes: true,
-              comments: true
-            }
+              comments: true,
+            },
           },
           documents: {
             select: {
@@ -103,7 +106,15 @@ export class PostService {
       }),
     ]);
 
-    return Pagination.of({ take, skip }, total, posts);
+    const postResponse = posts.map((post) => {
+      return {
+        ...post,
+        likedAt: post.likes.length ? first(post.likes) : null
+      }
+      
+    })
+
+    return Pagination.of({ take, skip }, total, postResponse);
   }
 
   async getPostsOfUser(id: string, query: GetAllPostsDto) {
@@ -161,8 +172,8 @@ export class PostService {
           _count: {
             select: {
               comments: true,
-              likes:  true
-            }
+              likes: true,
+            },
           },
           documents: {
             select: {
@@ -490,23 +501,24 @@ export class PostService {
 
   async unlikePost(postId: string, userId: string): Promise<void> {
     await this.checkIfUserIsInTheSamePostForum(postId, userId);
-    await this.dbContext.like.delete({ where: { userId_postId: { postId, userId } } });
+    await this.dbContext.like.delete({
+      where: { userId_postId: { postId, userId } },
+    });
   }
 
   private async checkIfUserIsInTheSamePostForum(id: string, userId: string) {
     const post = await this.dbContext.post.findUniqueOrThrow({
       where: { id },
     });
-    const isInSameForum = await this.dbContext.user.findFirst({
+    const isInSameForum = await this.dbContext.userToForum.findUnique({
       where: {
-        id: userId,
-        forums: {
-          some: {
-            id: post.forumId,
-          },
+        userId_forumId: {
+          userId,
+          forumId: post.forumId,
         },
       },
     });
+
     if (!isInSameForum) {
       throw new BadRequestException(
         "This user is not in the same post's forum",
