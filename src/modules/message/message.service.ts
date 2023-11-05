@@ -10,33 +10,7 @@ import { RequestUser } from '@common/types';
 export class MessageService {
   constructor(private readonly dbContext: PrismaService) {}
   async create(createMessageDto: CreateMessageDto, reqUser: string) {
-    const { conversationId } = createMessageDto;
-    const conversation = await this.dbContext.conversation.findUnique({
-      where: {
-        id: conversationId,
-      },
-      select: {
-        users: {
-          select: {
-            userId: true,
-          },
-        },
-      },
-    });
-
-    if (!conversation) throw new BadRequestException('Invalid conversation');
-
-    if (conversation.users.every(({ userId }) => userId !== reqUser))
-      throw new WsException('You are not a member of this conversation');
-
-    const message = await this.dbContext.message.create({
-      data: {
-        ...createMessageDto,
-        userId: reqUser,
-      },
-    });
-
-    return message;
+    return;
   }
 
   findAll() {

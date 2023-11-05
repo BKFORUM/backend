@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
 import { ConversationController } from './conversation.controller';
 import { DatabaseModule } from '@db';
+import { MessageModule } from '@modules/message/message.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, MessageModule, EventEmitterModule],
   controllers: [ConversationController],
   providers: [ConversationService],
   exports: [ConversationService],

@@ -1,8 +1,6 @@
 import { AuthenticatedSocket } from '@common/types';
 import { AuthService } from '@modules/auth';
 import { UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { Socket } from 'socket.io';
 
 export type SocketMiddleware = (

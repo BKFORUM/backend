@@ -11,10 +11,15 @@ import { GetMessageDto } from './dto/get-message.dto';
 import { selectUser } from '@modules/user/utils';
 import { GetConversationPayload } from './interface/get-conversation.payload';
 import { getAuthorDisplayName, getConversationDisplayName } from './utils/name';
+import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ConversationService {
-  constructor(private readonly dbContext: PrismaService) {}
+  constructor(
+    private readonly dbContext: PrismaService,
+    private readonly event: EventEmitter2,
+  ) {}
   create(createConversationDto: CreateConversationDto) {
     return 'This action adds a new conversation';
   }
@@ -95,6 +100,48 @@ export class ConversationService {
   remove(id: number) {
     return `This action removes a #${id} conversation`;
   }
+
+  async createMessage(
+    conversationId: string,
+    { content, type }: CreateMessageDto,
+    user: RequestUser,
+  ) {
+    const conversation = await this.dbContext.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      select: {
+        users: {
+          select: {
+            userId: true,
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) throw new BadRequestException('Invalid conversation');
+
+    if (conversation.users.every(({ userId }) => userId !== user.id))
+      throw new BadRequestException(
+        'You are not a member of this conversation',
+      );
+
+    const sender = conversation.users.find(({ userId }) => userId === user.id);
+
+    const message = await this.dbContext.message.create({
+      data: {
+        conversationId,
+        content,
+        type,
+        userId: sender.id,
+      },
+    });
+    this.event.emit('message.created', message);
+    return message;
+  }
+
+  async getMemberOfConversations(id: string) {}
 
   async getAllMessagesOfConversation(
     id: string,

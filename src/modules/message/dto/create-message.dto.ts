@@ -4,13 +4,6 @@ import { IsEnum, IsString, IsUUID } from 'class-validator';
 
 export class CreateMessageDto {
   @ApiProperty({
-    description: 'Id of the conversation',
-    example: 'b9aee9b6-16fa-4bb4-a3ff-d664d5b720eb',
-  })
-  @IsUUID()
-  conversationId: string;
-
-  @ApiProperty({
     description: 'Content of the message',
     example: 'Hello world',
   })

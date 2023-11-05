@@ -109,10 +109,9 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null
-      }
-      
-    })
+        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+      };
+    });
 
     return Pagination.of({ take, skip }, total, postResponse);
   }
@@ -169,6 +168,7 @@ export class PostService {
               fullName: true,
             },
           },
+          createdAt: true,
           _count: {
             select: {
               comments: true,
@@ -191,10 +191,9 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null
-      }
-      
-    })
+        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+      };
+    });
 
     return Pagination.of({ take, skip }, total, postResponse);
   }

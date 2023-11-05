@@ -15,8 +15,9 @@ import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { ReqUser } from '@common/decorator/request-user.decorator';
-import { RequestUser } from '@common/types';
+import { RequestUser, UUIDParam } from '@common/types';
 import { GetConversationDto } from './dto/get-conversation.dto';
+import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard)
 @ApiTags('Conversation')
@@ -40,6 +41,15 @@ export class ConversationController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.conversationService.findOne(+id);
+  }
+
+  @Post(':id/message')
+  createMessage(
+    @Param() { id }: UUIDParam,
+    @Body() body: CreateMessageDto,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.conversationService.createMessage(id, body, user);
   }
 
   @Patch(':id')

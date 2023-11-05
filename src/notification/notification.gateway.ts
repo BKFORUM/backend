@@ -22,9 +22,10 @@ import { WsJwtGuard } from 'src/guard/ws.guard';
 import { GatewaySessionManager } from './notification.session';
 import { WSAuthMiddleware } from 'src/middleware';
 import { AuthService } from '@modules/auth';
+import { OnEvent } from '@nestjs/event-emitter';
+import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
 
 @WebSocketGateway({
-  transports: ['websocket'],
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
@@ -61,14 +62,11 @@ export class NotificationGateway
     console.log(`WS ${NotificationGateway.name} init`);
   }
 
-  @SubscribeMessage('message')
+  @SubscribeMessage('onMessage')
   async handleMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: CreateMessageDto,
-  ) {
-    const message = await this.messageService.create(body, client.user.id);
-    this.server.emit('messageReceived', message);
-  }
+  ) {}
 
   @SubscribeMessage('delMessage')
   async handleDeleteMessage(
@@ -82,5 +80,16 @@ export class NotificationGateway
   @SubscribeMessage('tag')
   handleTag(client: any, payload: any): string {
     return 'Hello go';
+  }
+
+  @OnEvent('message.created')
+  handleMessageCreateEvent(payload: CreateMessageResponse) {
+    console.log('Inside message.create');
+    const { userId } = payload;
+
+    // const authorSocket = this.sessions.getUserSocket(userId);
+
+    // //if (authorSocket) authorSocket.emit('onMessage', payload);
+    this.server.emit('onMessage', payload);
   }
 }
