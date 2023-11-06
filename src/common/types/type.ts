@@ -12,6 +12,7 @@ export type RequestUser = {
   id: string;
   fullName: string;
   roles: string[];
+  session: string;
 };
 
 export type CloudinaryResponse = UploadApiResponse | UploadApiErrorResponse;

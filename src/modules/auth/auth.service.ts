@@ -8,7 +8,7 @@ import { UserService } from '../user';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '../user/dto';
-import { compareHash, hashPassword } from 'src/common';
+import { RequestUser, compareHash, hashPassword } from 'src/common';
 import { getUsersPayload } from './dto/getUserPayload.dto';
 import { PrismaService } from 'src/database/services';
 import { MailService } from '@modules/mail/mail.service';
@@ -92,7 +92,7 @@ export class AuthService {
   async getTokens(userData: getUsersPayload) {
     const user = {
       email: userData.email,
-      name: userData.fullName,
+      fullName: userData.fullName,
       roles: userData.roles.map((role) => role.role.name),
     };
 
@@ -100,6 +100,7 @@ export class AuthService {
       this.jwtService.signAsync(
         {
           id: userData.id,
+          session: await hashPassword(Date.now().toString()),
           ...user,
         },
         {
@@ -160,12 +161,12 @@ export class AuthService {
   }
 
   async verifyToken(token: string) {
-    const claims = await this.jwtService.verifyAsync(token, {
+    const claims = await this.jwtService.verifyAsync<RequestUser>(token, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
     });
 
     const user = await this.userService.findById(claims.id);
-    return user;
+    if (user) return claims;
   }
 
   async resetPassword(body: ResetPasswordDto) {

@@ -50,10 +50,14 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly authService: AuthService,
   ) {}
   handleConnection(client: AuthenticatedSocket) {
-    this.sessions.setUserSocket(client.user.id, client);
+    this.sessions.setUserSocket(this.getSessionId(client), client);
   }
   handleDisconnect(client: AuthenticatedSocket) {
-    this.sessions.removeUserSocket(client.user.id);
+    this.sessions.removeUserSocket(this.getSessionId(client));
+  }
+
+  getSessionId({ user }: AuthenticatedSocket) {
+    return `${user.id}_${user.session}`;
   }
 
   @WebSocketServer() server: Server;
@@ -65,17 +69,16 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('onMessage')
-  async handleMessage(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() body: CreateMessageDto,
-  ) {}
+  async handleMessage(@ConnectedSocket() client: AuthenticatedSocket) {
+    console.log(client.user);
+  }
 
   @SubscribeMessage('onConversationJoin')
   async handleJoinConversation(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() { id }: UUIDParam,
   ) {
-    const socket = this.sessions.getUserSocket(client.user.id);
+    const socket = this.sessions.getUserSocket(this.getSessionId(client));
     socket.join(id);
   }
 
@@ -84,7 +87,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() { id }: UUIDParam,
   ) {
-    const socket = this.sessions.getUserSocket(client.user.id);
+    const socket = this.sessions.getUserSocket(this.getSessionId(client));
     socket.leave(id);
   }
 
@@ -107,14 +110,5 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { conversationId } = payload;
 
     this.server.to(conversationId).emit('onMessage', payload);
-  }
-
-  @OnEvent(MessageEvent.CONVERSATION_CREATED)
-  handleConversationCreateEvent(payload: GetConversationPayload) {
-    const { users, id } = payload;
-    users.forEach(({ userId }) => {
-      const socket = this.sessions.getUserSocket(userId);
-      if (socket) socket.join(id);
-    });
   }
 }
