@@ -247,6 +247,8 @@ export class ConversationService {
           id: true,
           content: true,
           type: true,
+          createdAt: true,
+          updatedAt: true,
           author: {
             select: {
               userId: true,
@@ -269,7 +271,7 @@ export class ConversationService {
           },
         },
         orderBy: {
-          createdAt: Prisma.SortOrder.asc,
+          createdAt: Prisma.SortOrder.desc,
         },
       }),
       this.dbContext.message.count({
