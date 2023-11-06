@@ -176,6 +176,12 @@ export class ForumService {
       );
     }
 
+    if (userIds.includes(moderatorId)) {
+      throw new BadRequestException(
+        'You cannot include moderator in the member list',
+      );
+    }
+
     await this.userService.findById(moderatorId);
 
     if (userIds && userIds.length > 0) {
@@ -198,6 +204,8 @@ export class ForumService {
         }
       : undefined;
 
+    const allUserIds = [...userIds, moderatorId];
+
     const topicCreateMany = topicIds
       ? topicIds.map((topicId) => ({
           topicId,
@@ -217,6 +225,19 @@ export class ForumService {
             userId: moderatorId,
           },
           createMany: userCreateMany,
+        },
+        conversation: {
+          create: {
+            displayName: name,
+            avatarUrl: avatarUrl,
+            users: {
+              createMany: {
+                data: allUserIds.map((userId) => ({
+                  userId,
+                })),
+              },
+            },
+          },
         },
         topics: !isHomeRoom
           ? {
@@ -529,10 +550,9 @@ export class ForumService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null
-      }
-      
-    })
+        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+      };
+    });
 
     return Pagination.of({ take, skip }, total, postResponse);
   }
