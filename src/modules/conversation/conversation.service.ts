@@ -9,7 +9,10 @@ import { searchByMode } from '@common/utils';
 import { Pagination } from 'src/providers';
 import { GetMessageDto } from './dto/get-message.dto';
 import { selectUser } from '@modules/user/utils';
-import { GetConversationPayload } from './interface/get-conversation.payload';
+import {
+  GetConversationMemberPayload,
+  GetConversationPayload,
+} from './interface/get-conversation.payload';
 import { getAuthorDisplayName, getConversationDisplayName } from './utils/name';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -96,6 +99,7 @@ export class ConversationService {
           id: true,
           displayName: true,
           lastMessage: true,
+          type: true,
           users: {
             select: {
               userId: true,
@@ -124,10 +128,22 @@ export class ConversationService {
 
     const mappedConversations = conversations.map((c) => ({
       ...c,
+      avatarUrl:
+        c.type === ConversationType.GROUP_CHAT
+          ? c.avatarUrl
+          : this.getOtherUserAvatar(c.users, user),
       displayName: getConversationDisplayName(c, user),
     }));
 
     return Pagination.of({ skip, take }, total, mappedConversations);
+  }
+
+  async getOtherUserAvatar(
+    users: GetConversationMemberPayload[],
+    user: RequestUser,
+  ) {
+    const friend = users.find(({ userId }) => userId !== user.id)!.user;
+    return friend.avatarUrl;
   }
 
   findOne(id: number) {
