@@ -15,6 +15,7 @@ import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from '@modules/user';
 import { MessageEvent } from 'src/gateway/enum';
+import { omit } from 'lodash';
 
 @Injectable()
 export class ConversationService {
@@ -232,6 +233,7 @@ export class ConversationService {
         select: {
           id: true,
           content: true,
+          type: true,
           author: {
             select: {
               userId: true,
@@ -265,7 +267,7 @@ export class ConversationService {
     ]);
 
     const mappedMessages = messages.map((m) => ({
-      ...m,
+      ...omit(m, 'conversation'),
       author: {
         ...m.author,
         displayName: getAuthorDisplayName(m.author),

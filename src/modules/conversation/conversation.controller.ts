@@ -25,6 +25,7 @@ import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
 import { GetConversationDto } from './dto/get-conversation.dto';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
+import { GetMessageDto } from './dto/get-message.dto';
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard)
 @ApiTags('Conversation')
@@ -53,8 +54,16 @@ export class ConversationController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.conversationService.findOne(+id);
+  findOne(
+    @Param() { id }: UUIDParam,
+    @Query() query: GetMessageDto,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.conversationService.getAllMessagesOfConversation(
+      id,
+      user,
+      query,
+    );
   }
 
   @Post(':id/message')
