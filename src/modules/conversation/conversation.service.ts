@@ -269,7 +269,7 @@ export class ConversationService {
     const mappedMessages = messages.map((m) => ({
       ...omit(m, 'conversation'),
       author: {
-        ...m.author,
+        ...m.author.user,
         displayName: getAuthorDisplayName(m.author),
       },
     }));
