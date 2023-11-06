@@ -12,6 +12,7 @@ import { selectUser } from '@modules/user/utils';
 import {
   GetConversationMemberPayload,
   GetConversationPayload,
+  GetMessageResponse,
 } from './interface/get-conversation.payload';
 import { getAuthorDisplayName, getConversationDisplayName } from './utils/name';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
@@ -159,7 +160,7 @@ export class ConversationService {
     conversationId: string,
     { content, type }: CreateMessageDto,
     user: RequestUser,
-  ) {
+  ): Promise<GetMessageResponse> {
     const conversation = await this.dbContext.conversation.findUnique({
       where: {
         id: conversationId,
@@ -201,6 +202,7 @@ export class ConversationService {
         type: true,
         createdAt: true,
         updatedAt: true,
+        conversationId: true,
         author: {
           select: {
             userId: true,
