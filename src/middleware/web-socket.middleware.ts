@@ -18,10 +18,7 @@ export const WSAuthMiddleware = (
 
       const user = await authService.verifyToken(authToken);
       if (user) {
-        socket.user = {
-          ...user,
-          roles: user.roles.map(({ name }) => name),
-        };
+        socket.user = user;
         next();
       } else {
         next(new UnauthorizedException());

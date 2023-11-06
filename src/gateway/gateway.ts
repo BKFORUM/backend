@@ -1,8 +1,6 @@
 import { AuthenticatedSocket, UUIDParam } from '@common/types';
 import { AuthService } from '@modules/auth';
-import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
-import { GetConversationPayload } from '@modules/conversation/interface/get-conversation.payload';
-import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
+import { GetConversationPayload, GetMessageResponse } from '@modules/conversation/interface/get-conversation.payload';
 import { MessageService } from '@modules/message/message.service';
 import {
   Logger,
@@ -51,10 +49,14 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly authService: AuthService,
   ) {}
   handleConnection(client: AuthenticatedSocket) {
-    this.sessions.setUserSocket(client.user.id, client);
+    this.sessions.setUserSocket(this.getSessionId(client), client);
   }
   handleDisconnect(client: AuthenticatedSocket) {
-    this.sessions.removeUserSocket(client.user.id);
+    this.sessions.removeUserSocket(this.getSessionId(client));
+  }
+
+  getSessionId({ user }: AuthenticatedSocket) {
+    return `${user.id}_${user.session}`;
   }
 
   @WebSocketServer() server: Server;
@@ -66,17 +68,17 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('onMessage')
-  async handleMessage(
-    @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() body: CreateMessageDto,
-  ) {}
+  async handleMessage(@ConnectedSocket() client: AuthenticatedSocket) {
+    console.log(client.user);
+  }
 
   @SubscribeMessage('onConversationJoin')
   async handleJoinConversation(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() { id }: UUIDParam,
   ) {
-    const socket = this.sessions.getUserSocket(client.user.id);
+    const socket = this.sessions.getUserSocket(this.getSessionId(client));
+    this.logger.log(`${client.user.id} joined conversation ${id}`);
     socket.join(id);
   }
 
@@ -85,7 +87,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() { id }: UUIDParam,
   ) {
-    const socket = this.sessions.getUserSocket(client.user.id);
+    const socket = this.sessions.getUserSocket(this.getSessionId(client));
     socket.leave(id);
   }
 
@@ -104,9 +106,9 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @OnEvent(MessageEvent.MESSAGE_CREATED)
-  handleMessageCreateEvent(payload: CreateMessageResponse) {
+  handleMessageCreateEvent(payload: GetMessageResponse) {
     const { conversationId } = payload;
-
+    this.logger.log(`Message in ${conversationId}`);
     this.server.to(conversationId).emit('onMessage', payload);
   }
 
