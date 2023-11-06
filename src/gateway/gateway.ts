@@ -1,4 +1,7 @@
-import { UUIDParam, AuthenticatedSocket } from '@common/types';
+import { AuthenticatedSocket, UUIDParam } from '@common/types';
+import { AuthService } from '@modules/auth';
+import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
+import { GetConversationPayload } from '@modules/conversation/interface/get-conversation.payload';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { MessageService } from '@modules/message/message.service';
 import {
@@ -8,25 +11,23 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { Like, Notification } from '@prisma/client';
 import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
-import { GatewaySessionManager } from './gateway.session';
 import { WSAuthMiddleware } from 'src/middleware';
-import { AuthService } from '@modules/auth';
-import { OnEvent } from '@nestjs/event-emitter';
-import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
 import { MessageEvent } from './enum';
-import { GetConversationPayload } from '@modules/conversation/interface/get-conversation.payload';
+import { GatewaySessionManager } from './gateway.session';
 
 @WebSocketGateway({
   cors: {
@@ -116,5 +117,19 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const socket = this.sessions.getUserSocket(userId);
       if (socket) socket.join(id);
     });
+  }
+
+  @OnEvent(MessageEvent.COMMENT_CREATED)
+  handleCommentCreateEvent(payload: Notification, userId: string) {
+    const authorSocket = this.sessions.getUserSocket(userId);
+
+    if (authorSocket) authorSocket.emit('onCommentCreated', payload);
+  }
+
+  @OnEvent(MessageEvent.LIKE_CREATED)
+  handleLikeCreateEvent(payload: Like, userId: string) {
+    const authorSocket = this.sessions.getUserSocket(userId);
+
+    if (authorSocket) authorSocket.emit('onLikeCreated', payload);
   }
 }
