@@ -74,6 +74,15 @@ export class FriendsService {
       },
     });
 
+    if (status === ResourceStatus.DELETED) {
+      await this.dbContext.friendship.delete({
+        where: {
+          id: friendship.id,
+        },
+      });
+      return;
+    }
+
     const hasConversation = await this.dbContext.conversation.findFirst({
       where: {
         type: ConversationType.CHAT,

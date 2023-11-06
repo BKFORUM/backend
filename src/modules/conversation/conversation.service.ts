@@ -124,7 +124,7 @@ export class ConversationService {
 
     const mappedConversations = conversations.map((c) => ({
       ...c,
-      displayName: getConversationDisplayName(c),
+      displayName: getConversationDisplayName(c, user),
     }));
 
     return Pagination.of({ skip, take }, total, mappedConversations);
