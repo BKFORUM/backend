@@ -195,9 +195,45 @@ export class ConversationService {
           },
         },
       },
+      select: {
+        id: true,
+        content: true,
+        type: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: selectUser,
+          },
+        },
+        conversation: {
+          select: {
+            id: true,
+            displayName: true,
+            users: {
+              select: {
+                userId: true,
+                displayName: true,
+                user: selectUser,
+              },
+            },
+          },
+        },
+      },
     });
-    this.event.emit('message.created', message);
-    return message;
+
+    const mappedMessage = {
+      ...omit(message, 'conversation'),
+      author: {
+        ...message.author.user,
+        displayName: getAuthorDisplayName(message.author),
+      },
+    };
+
+    this.event.emit('message.created', mappedMessage);
+    return mappedMessage;
   }
 
   async getMemberOfConversations(id: string) {}
