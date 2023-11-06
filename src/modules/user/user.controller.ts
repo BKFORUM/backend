@@ -38,8 +38,11 @@ export class UserController {
   })
   @HttpCode(HttpStatus.OK)
   @Get()
-  async getAllUsers(@Query() query: GetUsersQueryDto) {
-    return this.userService.getAllUsers(query);
+  async getAllUsers(
+    @Query() query: GetUsersQueryDto,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.userService.getAllUsers(query, user);
   }
 
   @ApiOperation({

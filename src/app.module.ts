@@ -14,9 +14,9 @@ import { PrismaClientExceptionFilter } from './filters/prisma-client-exception.f
 import { FriendsModule } from './modules/friends';
 import { ConversationModule } from './modules/conversation/conversation.module';
 import { MessageModule } from './modules/message/message.module';
-import { NotificationModule } from './notification/notification.module';
 import { CommentModule } from '@modules/comments/comment.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { GatewayModule } from './gateway/gateway.module';
 
 @Module({
   providers: [
@@ -30,7 +30,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
       isGlobal: true,
     }),
     EventEmitterModule.forRoot(),
-    NotificationModule,
+    GatewayModule,
     CloudinaryModule,
     AuthModule,
     UserModule,

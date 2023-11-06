@@ -8,7 +8,13 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 
 @Module({
-  imports: [DatabaseModule, RoleModule, FacultyModule, PostModule, forwardRef(() => ForumModule)],
+  imports: [
+    DatabaseModule,
+    RoleModule,
+    FacultyModule,
+    PostModule,
+    forwardRef(() => ForumModule),
+  ],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

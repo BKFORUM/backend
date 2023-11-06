@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ResourceStatus, User, UserType } from '@prisma/client';
 import { isNotEmpty } from 'class-validator';
-import { isEmpty } from 'lodash';
+import { concat, isEmpty, omit } from 'lodash';
 import {
   RequestUser,
   getDay,
@@ -215,15 +215,10 @@ export class UserService {
     };
   };
 
-  async getAllUsers({
-    search,
-    forumId,
-    type,
-    isInForum,
-    order,
-    take,
-    skip,
-  }: GetUsersQueryDto): Promise<PaginatedResult<UserResponse>> {
+  async getAllUsers(
+    { search, forumId, type, isInForum, order, take, skip }: GetUsersQueryDto,
+    reqUser: RequestUser,
+  ): Promise<PaginatedResult<UserResponse>> {
     if (forumId) {
       const forum = await this.dbContext.forum.findUnique({
         where: { id: forumId },
@@ -263,6 +258,8 @@ export class UserService {
           avatarUrl: true,
           createdAt: true,
           updatedAt: true,
+          sentRequests: true,
+          receivedRequests: true,
         },
       }),
       this.dbContext.user.count({
@@ -274,7 +271,22 @@ export class UserService {
       }),
     ]);
 
-    return Pagination.of({ skip, take }, total, users);
+    const mappedUsers = users.map((user) => {
+      const requests = concat(user.sentRequests, user.receivedRequests);
+
+      const friendStatus =
+        requests.find(
+          ({ senderId, receiverId }) =>
+            reqUser.id === senderId || reqUser.id === receiverId,
+        )?.status ?? 'NOT FRIEND';
+
+      return {
+        ...omit(user, 'sentRequests', 'receivedRequests'),
+        friendStatus,
+      };
+    });
+
+    return Pagination.of({ skip, take }, total, mappedUsers);
   }
 
   updateUser = async (id: string, data: UpdateUserDto) => {

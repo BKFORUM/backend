@@ -1,7 +1,8 @@
-import { RequestUser, UUIDParam, AuthenticatedSocket } from '@common/types';
+import { UUIDParam, AuthenticatedSocket } from '@common/types';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { MessageService } from '@modules/message/message.service';
 import {
+  Logger,
   UseFilters,
   UseGuards,
   UsePipes,
@@ -19,11 +20,12 @@ import {
 import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
-import { GatewaySessionManager } from './notification.session';
+import { GatewaySessionManager } from './gateway.session';
 import { WSAuthMiddleware } from 'src/middleware';
 import { AuthService } from '@modules/auth';
 import { OnEvent } from '@nestjs/event-emitter';
 import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
+import { MessageEvent } from './enum';
 
 @WebSocketGateway({
   cors: {
@@ -39,9 +41,8 @@ import { CreateMessageResponse } from '@modules/conversation/dto/create-message.
   }),
 )
 @UseGuards(WsJwtGuard)
-export class NotificationGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(EventGateway.name);
   constructor(
     private readonly messageService: MessageService,
     private readonly sessions: GatewaySessionManager,
@@ -59,7 +60,7 @@ export class NotificationGateway
   afterInit(server: Server) {
     const middle = WSAuthMiddleware(this.authService);
     server.use(middle);
-    console.log(`WS ${NotificationGateway.name} init`);
+    this.logger.log(`WS ${EventGateway.name} init`);
   }
 
   @SubscribeMessage('onMessage')
@@ -67,6 +68,24 @@ export class NotificationGateway
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() body: CreateMessageDto,
   ) {}
+
+  @SubscribeMessage('onConversationJoin')
+  async handleJoinConversation(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() { id }: UUIDParam,
+  ) {
+    const socket = this.sessions.getUserSocket(client.user.id);
+    socket.join(id);
+  }
+
+  @SubscribeMessage('onConversationLeave')
+  async handleLeaveConversation(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() { id }: UUIDParam,
+  ) {
+    const socket = this.sessions.getUserSocket(client.user.id);
+    socket.leave(id);
+  }
 
   @SubscribeMessage('delMessage')
   async handleDeleteMessage(
@@ -82,14 +101,10 @@ export class NotificationGateway
     return 'Hello go';
   }
 
-  @OnEvent('message.created')
+  @OnEvent(MessageEvent.MESSAGE_CREATED)
   handleMessageCreateEvent(payload: CreateMessageResponse) {
-    console.log('Inside message.create');
-    const { userId } = payload;
+    const { conversationId } = payload;
 
-    // const authorSocket = this.sessions.getUserSocket(userId);
-
-    // //if (authorSocket) authorSocket.emit('onMessage', payload);
-    this.server.emit('onMessage', payload);
+    this.server.to(conversationId).emit('onMessage', payload);
   }
 }

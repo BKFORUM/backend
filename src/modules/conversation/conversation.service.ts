@@ -135,6 +135,11 @@ export class ConversationService {
         content,
         type,
         userId: sender.id,
+        lastMessageOfConversation: {
+          connect: {
+            id: conversationId,
+          },
+        },
       },
     });
     this.event.emit('message.created', message);

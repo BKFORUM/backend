@@ -4,14 +4,10 @@ import { RequestUser } from '@common/types';
 import { selectUser } from '@modules/user/utils';
 import { ConversationType, ResourceStatus } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
-import { NotificationGateway } from 'src/notification';
 
 @Injectable()
 export class FriendsService {
-  constructor(
-    private readonly notificationGateway: NotificationGateway,
-    private readonly dbContext: PrismaService,
-  ) {}
+  constructor(private readonly dbContext: PrismaService) {}
   async sendFriendRequests({ id: senderId }: RequestUser, receiverId: string) {
     const existedFriendship = await this.dbContext.friendship.findFirst({
       where: {
@@ -40,11 +36,6 @@ export class FriendsService {
       },
     });
 
-    this.notificationGateway.server.emit(
-      'friendRequest',
-      `You receive a friend request from ${senderId}`,
-    );
-
     return request;
   }
 
@@ -68,7 +59,7 @@ export class FriendsService {
     { id: receiverId }: RequestUser,
     status: ResourceStatus,
   ) {
-    await this.dbContext.friendship.findFirstOrThrow({
+    const friendship = await this.dbContext.friendship.findFirstOrThrow({
       where: {
         OR: [
           {
@@ -99,30 +90,13 @@ export class FriendsService {
 
     await this.dbContext.$transaction(async (trx) => {
       await Promise.all([
-        trx.friendship.upsert({
-          create: {
-            senderId: receiverId,
-            receiverId: senderId,
-            status,
-          },
-          update: {
-            status,
-          },
-          where: {
-            senderId_receiverId: {
-              senderId: receiverId,
-              receiverId: senderId,
-            },
-          },
-        }),
         trx.friendship.update({
           where: {
-            senderId_receiverId: {
-              senderId,
-              receiverId,
-            },
+            id: friendship.id,
           },
-          data: { status },
+          data: {
+            status,
+          },
         }),
         canCreateConversation
           ? trx.conversation.create({
@@ -160,13 +134,17 @@ export class FriendsService {
         ],
       },
       select: {
+        senderId: true,
+        receiverId: true,
         sender: selectUser,
+        receiver: selectUser,
       },
     });
 
-    const friends = friendList
-      .filter(({ sender }) => sender.id !== user.id)
-      .map(({ sender }) => sender);
+    const friends = friendList.map(({ senderId, sender, receiver }) => {
+      const friend = user.id === senderId ? receiver : sender;
+      return friend;
+    });
 
     return friends;
   }
