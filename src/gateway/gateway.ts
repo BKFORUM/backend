@@ -79,6 +79,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() { id }: UUIDParam,
   ) {
     const socket = this.sessions.getUserSocket(this.getSessionId(client));
+    this.logger.log(`${client.user.id} joined conversation ${id}`);
     socket.join(id);
   }
 
@@ -108,7 +109,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @OnEvent(MessageEvent.MESSAGE_CREATED)
   handleMessageCreateEvent(payload: CreateMessageResponse) {
     const { conversationId } = payload;
-
+    this.logger.log(`Message in ${conversationId}`);
     this.server.to(conversationId).emit('onMessage', payload);
   }
 }
