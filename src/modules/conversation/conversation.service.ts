@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
 import { RequestUser } from '@common/types';
 import { PrismaService } from 'src/database/services';
-import { Prisma } from '@prisma/client';
+import { ConversationType, Prisma } from '@prisma/client';
 import { GetConversationDto } from './dto/get-conversation.dto';
 import { searchByMode } from '@common/utils';
 import { Pagination } from 'src/providers';
@@ -13,15 +13,55 @@ import { GetConversationPayload } from './interface/get-conversation.payload';
 import { getAuthorDisplayName, getConversationDisplayName } from './utils/name';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UserService } from '@modules/user';
+import { MessageEvent } from 'src/gateway/enum';
 
 @Injectable()
 export class ConversationService {
   constructor(
     private readonly dbContext: PrismaService,
     private readonly event: EventEmitter2,
+    private readonly userService: UserService,
   ) {}
-  create(createConversationDto: CreateConversationDto) {
-    return 'This action adds a new conversation';
+
+  private readonly logger = new Logger(ConversationService.name);
+
+  async create(body: CreateConversationDto, user: RequestUser) {
+    const { displayName, userIds, avatarUrl } = body;
+
+    if (userIds.includes(user.id)) {
+      throw new BadRequestException(
+        'You cannot add yourself in the conversation',
+      );
+    }
+
+    await this.userService.validateUserIds(userIds);
+    const userIdsData = [user.id, ...userIds];
+    const createUsers: Prisma.UserToConversationCreateNestedManyWithoutConversationInput =
+      {
+        createMany: {
+          data: userIdsData.map((userId) => ({
+            userId,
+          })),
+        },
+      };
+
+    const conversation = await this.dbContext.conversation.create({
+      data: {
+        avatarUrl,
+        displayName,
+        type: ConversationType.GROUP_CHAT,
+        users: createUsers,
+      },
+      include: {
+        users: true,
+      },
+    });
+
+    this.logger.log('Create a new conversation successfully', { conversation });
+    this.event.emit(MessageEvent.CONVERSATION_CREATED, conversation);
+
+    return conversation;
   }
 
   async getAllConversations(user: RequestUser, query: GetConversationDto) {

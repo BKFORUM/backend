@@ -4,9 +4,10 @@ import { ConversationController } from './conversation.controller';
 import { DatabaseModule } from '@db';
 import { MessageModule } from '@modules/message/message.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { UserModule } from '@modules/user';
 
 @Module({
-  imports: [DatabaseModule, MessageModule, EventEmitterModule],
+  imports: [DatabaseModule, MessageModule, EventEmitterModule, UserModule],
   controllers: [ConversationController],
   providers: [ConversationService],
   exports: [ConversationService],

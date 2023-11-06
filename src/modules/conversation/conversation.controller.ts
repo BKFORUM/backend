@@ -8,11 +8,18 @@ import {
   Delete,
   UseGuards,
   Query,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AccessTokenGuard } from 'src/guard';
 import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
@@ -26,8 +33,15 @@ export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
 
   @Post()
-  create(@Body() createConversationDto: CreateConversationDto) {
-    return this.conversationService.create(createConversationDto);
+  @ApiOperation({
+    description: 'Create a new group conversation',
+  })
+  @HttpCode(HttpStatus.CREATED)
+  create(
+    @Body() createConversationDto: CreateConversationDto,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.conversationService.create(createConversationDto, user);
   }
 
   @ApiOperation({

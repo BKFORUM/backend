@@ -26,6 +26,7 @@ import { AuthService } from '@modules/auth';
 import { OnEvent } from '@nestjs/event-emitter';
 import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
 import { MessageEvent } from './enum';
+import { GetConversationPayload } from '@modules/conversation/interface/get-conversation.payload';
 
 @WebSocketGateway({
   cors: {
@@ -106,5 +107,14 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { conversationId } = payload;
 
     this.server.to(conversationId).emit('onMessage', payload);
+  }
+
+  @OnEvent(MessageEvent.CONVERSATION_CREATED)
+  handleConversationCreateEvent(payload: GetConversationPayload) {
+    const { users, id } = payload;
+    users.forEach(({ userId }) => {
+      const socket = this.sessions.getUserSocket(userId);
+      if (socket) socket.join(id);
+    });
   }
 }
