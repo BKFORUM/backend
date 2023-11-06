@@ -138,10 +138,7 @@ export class ConversationService {
     return Pagination.of({ skip, take }, total, mappedConversations);
   }
 
-  async getOtherUserAvatar(
-    users: GetConversationMemberPayload[],
-    user: RequestUser,
-  ) {
+  getOtherUserAvatar(users: GetConversationMemberPayload[], user: RequestUser) {
     const friend = users.find(({ userId }) => userId !== user.id)!.user;
     return friend.avatarUrl;
   }
