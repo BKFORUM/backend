@@ -104,7 +104,7 @@ export class PostController {
   getComments(
     @Param() { id }: UUIDParam,
     @Query() dto: GetCommentDto,
-  ): Promise<CommentResponse[]> {
+  ) {
     return this.postService.getComments(id, dto);
   }
 
