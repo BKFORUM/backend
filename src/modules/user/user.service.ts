@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { ResourceStatus, User, UserType } from '@prisma/client';
+import { User, UserType } from '@prisma/client';
 import { isNotEmpty } from 'class-validator';
 import { concat, isEmpty, omit } from 'lodash';
 import {
@@ -50,6 +50,8 @@ export class UserService {
       address,
       phoneNumber,
     } = data;
+
+    selectUser;
 
     const rolesData = await this.roleService.checkRoles(roles);
 
@@ -367,10 +369,13 @@ export class UserService {
           in: userIds,
         },
       },
+      ...selectUser,
     });
 
     if (users.length !== userIds.length) {
       throw new NotFoundException(`One or more users not found`);
     }
+
+    return users;
   }
 }
