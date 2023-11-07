@@ -24,10 +24,6 @@ export class WsJwtGuard implements CanActivate {
         client.handshake?.headers?.authorization;
 
       const user = await this.authService.verifyToken(authToken);
-      client.user = {
-        ...user,
-        roles: user.roles.map(({ name }) => name),
-      };
       return Boolean(user);
     } catch (err) {
       this.logger.error(err);

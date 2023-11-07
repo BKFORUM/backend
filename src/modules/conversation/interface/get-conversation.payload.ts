@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Gender, MessageType, Prisma } from '@prisma/client';
 
 export type GetConversationPayload = Prisma.ConversationGetPayload<{
   select: {
@@ -24,6 +24,26 @@ export type GetConversationPayload = Prisma.ConversationGetPayload<{
     };
   };
 }>;
+
+export type GetMessageResponse = {
+  id: string;
+  type: MessageType;
+  content: string;
+  conversationId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  author: {
+    displayName: string;
+    id: string;
+    avatarUrl: string;
+    fullName: string;
+    email: string;
+    dateOfBirth: Date;
+    gender: Gender;
+    phoneNumber: string;
+    address: string;
+  };
+};
 
 export type GetConversationMemberPayload = Prisma.UserToConversationGetPayload<{
   select: {

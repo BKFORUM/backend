@@ -476,7 +476,7 @@ export class PostService {
         },
       },
       orderBy: {
-        createdAt: Prisma.SortOrder.asc,
+        createdAt: Prisma.SortOrder.desc,
       },
     });
   }

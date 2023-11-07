@@ -9,7 +9,11 @@ import { searchByMode } from '@common/utils';
 import { Pagination } from 'src/providers';
 import { GetMessageDto } from './dto/get-message.dto';
 import { selectUser } from '@modules/user/utils';
-import { GetConversationPayload } from './interface/get-conversation.payload';
+import {
+  GetConversationMemberPayload,
+  GetConversationPayload,
+  GetMessageResponse,
+} from './interface/get-conversation.payload';
 import { getAuthorDisplayName, getConversationDisplayName } from './utils/name';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -96,6 +100,7 @@ export class ConversationService {
           id: true,
           displayName: true,
           lastMessage: true,
+          type: true,
           users: {
             select: {
               userId: true,
@@ -124,10 +129,19 @@ export class ConversationService {
 
     const mappedConversations = conversations.map((c) => ({
       ...c,
-      displayName: getConversationDisplayName(c),
+      avatarUrl:
+        c.type === ConversationType.GROUP_CHAT
+          ? c.avatarUrl
+          : this.getOtherUserAvatar(c.users, user),
+      displayName: getConversationDisplayName(c, user),
     }));
 
     return Pagination.of({ skip, take }, total, mappedConversations);
+  }
+
+  getOtherUserAvatar(users: GetConversationMemberPayload[], user: RequestUser) {
+    const friend = users.find(({ userId }) => userId !== user.id)!.user;
+    return friend.avatarUrl;
   }
 
   findOne(id: number) {
@@ -146,7 +160,7 @@ export class ConversationService {
     conversationId: string,
     { content, type }: CreateMessageDto,
     user: RequestUser,
-  ) {
+  ): Promise<GetMessageResponse> {
     const conversation = await this.dbContext.conversation.findUnique({
       where: {
         id: conversationId,
@@ -182,9 +196,46 @@ export class ConversationService {
           },
         },
       },
+      select: {
+        id: true,
+        content: true,
+        type: true,
+        createdAt: true,
+        updatedAt: true,
+        conversationId: true,
+        author: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: selectUser,
+          },
+        },
+        conversation: {
+          select: {
+            id: true,
+            displayName: true,
+            users: {
+              select: {
+                userId: true,
+                displayName: true,
+                user: selectUser,
+              },
+            },
+          },
+        },
+      },
     });
-    this.event.emit('message.created', message);
-    return message;
+
+    const mappedMessage = {
+      ...omit(message, 'conversation'),
+      author: {
+        ...message.author.user,
+        displayName: getAuthorDisplayName(message.author),
+      },
+    };
+
+    this.event.emit('message.created', mappedMessage);
+    return mappedMessage;
   }
 
   async getMemberOfConversations(id: string) {}
@@ -234,6 +285,8 @@ export class ConversationService {
           id: true,
           content: true,
           type: true,
+          createdAt: true,
+          updatedAt: true,
           author: {
             select: {
               userId: true,
@@ -256,7 +309,7 @@ export class ConversationService {
           },
         },
         orderBy: {
-          createdAt: Prisma.SortOrder.asc,
+          createdAt: Prisma.SortOrder.desc,
         },
       }),
       this.dbContext.message.count({
@@ -269,7 +322,7 @@ export class ConversationService {
     const mappedMessages = messages.map((m) => ({
       ...omit(m, 'conversation'),
       author: {
-        ...m.author,
+        ...m.author.user,
         displayName: getAuthorDisplayName(m.author),
       },
     }));
