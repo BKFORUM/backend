@@ -102,4 +102,13 @@ export class UserController {
   async getForumsOfUser(@Param() { id }: UUIDParam) {
     return this.forumService.getForumsOfUser(id);
   }
+
+  @ApiOperation({
+    description: 'Reset password of a user',
+  })
+  @Roles(UserRole.ADMIN)
+  @Put(':id/reset-password')
+  async resetPassword(@Param() { id }: UUIDParam) {
+    return this.userService.resetPassword(id);
+  }
 }

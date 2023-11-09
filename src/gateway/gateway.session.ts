@@ -6,6 +6,7 @@ export interface IGatewaySessionManager {
   setUserSocket(id: string, socket: AuthenticatedSocket): void;
   removeUserSocket(id: string): void;
   getSockets(): Map<string, AuthenticatedSocket>;
+  getSocketsByUserId(userId: string): AuthenticatedSocket[];
 }
 
 @Injectable()
@@ -24,5 +25,14 @@ export class GatewaySessionManager implements IGatewaySessionManager {
   }
   getSockets(): Map<string, AuthenticatedSocket> {
     return this.sessions;
+  }
+
+  getSocketsByUserId(userId: string): AuthenticatedSocket[] {
+    const sockets: AuthenticatedSocket[] = [];
+    for (const [key, value] of this.sessions) {
+      if (key.split('_')[0] === userId) sockets.push(value);
+    }
+
+    return sockets;
   }
 }

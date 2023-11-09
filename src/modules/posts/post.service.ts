@@ -480,31 +480,42 @@ export class PostService {
     return comment;
   }
 
-  getComments(postId: string, dto: GetCommentDto): Promise<CommentResponse[]> {
-    return this.dbContext.comment.findMany({
-      where: {
-        postId,
-      },
-      skip: dto.skip,
-      take: dto.take,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            phoneNumber: true,
-            address: true,
-            avatarUrl: true,
-            dateOfBirth: true,
-            email: true,
-            gender: true,
+  async getComments(
+    postId: string,
+    dto: GetCommentDto,
+  ) {
+    const [comments, totalRecords] = await Promise.all([
+      this.dbContext.comment.findMany({
+        where: {
+          postId,
+        },
+        skip: dto.skip,
+        take: dto.take,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              phoneNumber: true,
+              address: true,
+              avatarUrl: true,
+              dateOfBirth: true,
+              email: true,
+              gender: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: Prisma.SortOrder.asc,
-      },
-    });
+        orderBy: {
+          createdAt: Prisma.SortOrder.desc,
+        },
+      }),
+      this.dbContext.comment.count({ where: { postId } }),
+    ]);
+
+    return {
+      totalRecords,
+      data: comments,
+    }
   }
 
   async likePost(postId: string, user: RequestUser): Promise<Like> {

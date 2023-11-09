@@ -2,6 +2,7 @@ import { AuthenticatedSocket, UUIDParam } from '@common/types';
 import { AuthService } from '@modules/auth';
 import { GetConversationPayload, GetMessageResponse } from '@modules/conversation/interface/get-conversation.payload';
 import { MessageService } from '@modules/message/message.service';
+import { UserResponse } from '@modules/user/interfaces';
 import {
   Logger,
   UseFilters,
@@ -20,6 +21,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Like, Notification } from '@prisma/client';
+import { isEmpty } from 'lodash';
 import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
@@ -112,6 +114,21 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(conversationId).emit('onMessage', payload);
   }
 
+  @OnEvent(MessageEvent.CONVERSATION_JOINED)
+  handleConversationJoinedEvent(payload: {
+    users: UserResponse[];
+    conversationId: string;
+  }) {
+    const { users, conversationId } = payload;
+    this.server.to(conversationId).emit('onAddUsersConversation', users);
+  }
+
+  @OnEvent(MessageEvent.CONVERSATION_LEFT)
+  handleLeft(payload: { user: UserResponse; conversationId: string }) {
+    const { user, conversationId } = payload;
+    this.server.to(conversationId).emit('onUserLeaveConversation', user);
+  }
+
   @OnEvent(MessageEvent.CONVERSATION_CREATED)
   handleConversationCreateEvent(payload: GetConversationPayload) {
     const { users, id } = payload;
@@ -123,15 +140,23 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @OnEvent(MessageEvent.COMMENT_CREATED)
   handleCommentCreateEvent(payload: Notification, userId: string) {
-    const authorSocket = this.sessions.getUserSocket(userId);
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
 
-    if (authorSocket) authorSocket.emit('onCommentCreated', payload);
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onCommentCreated', payload);
+      })
+    }
   }
 
   @OnEvent(MessageEvent.LIKE_CREATED)
   handleLikeCreateEvent(payload: Like, userId: string) {
-    const authorSocket = this.sessions.getUserSocket(userId);
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
 
-    if (authorSocket) authorSocket.emit('onLikeCreated', payload);
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onLikeCreated', payload);
+      })
+    }
   }
 }

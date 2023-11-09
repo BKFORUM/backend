@@ -202,6 +202,7 @@ model Forum {
   users     UserToForum[]
   posts     Post[]
   topics    ForumToTopic[]
+  conversation  Conversation?
 
   @@map("forum")
 }
@@ -335,10 +336,12 @@ model Conversation {
   type        ConversationType @default(CHAT)
   avatarUrl   String?           @db.Text @map("avatar_url")
   lastMessageId String?       @db.Uuid() @map("last_message_id") @unique
+  forumId     String?         @db.Uuid @map("forum_id") @unique
 
   users    UserToConversation[]
   messages Message[]
   lastMessage Message? @relation("conversation_last_message",fields: [lastMessageId],references: [id])
+  forum     Forum?  @relation(fields: [forumId],references: [id])
 
   @@map("conversation")
 }

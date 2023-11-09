@@ -4,6 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Notification } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
 import { GetNotificationDto } from './dto';
+import { NotificationResponse } from './interfaces/notification-response.interface';
 
 @Injectable()
 export class NotificationService {
@@ -35,15 +36,20 @@ export class NotificationService {
     return notification;
   }
 
-  getAllNotifications(
+  async getAllNotifications(
     userId: string,
     dto: GetNotificationDto,
-  ): Promise<Notification[]> {
-    return this.dbContext.notification.findMany({
+  ): Promise<NotificationResponse> {
+    const [notifications, totalRecords] = await Promise.all([this.dbContext.notification.findMany({
       where: { userId },
       skip: dto.skip,
       take: dto.take,
-    });
+    }), this.dbContext.notification.count({ where: { userId } })])
+
+    return {
+      data: notifications,
+      totalRecords
+    }
   }
 
   async markAsReadNotification(id: string): Promise<void> {

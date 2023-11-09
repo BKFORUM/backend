@@ -31,6 +31,8 @@ import {
 } from './dto';
 import { ForumRequestDto } from './dto/forum-request.dto';
 import { ForumResponse } from './interfaces';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { MessageEvent } from 'src/gateway/enum';
 
 @Injectable()
 export class ForumService {
@@ -39,6 +41,7 @@ export class ForumService {
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly topicService: TopicService,
+    private readonly event: EventEmitter2,
   ) {}
 
   private readonly logger = new Logger(ForumService.name);
@@ -179,6 +182,11 @@ export class ForumService {
     await this.userService.findById(moderatorId);
 
     if (userIds && userIds.length > 0) {
+      if (userIds.includes(moderatorId)) {
+        throw new BadRequestException(
+          'You cannot include moderator in the member list',
+        );
+      }
       await this.userService.validateUserIds(userIds);
     }
 
@@ -197,6 +205,8 @@ export class ForumService {
           skipDuplicates: true,
         }
       : undefined;
+
+    const allUserIds = [...userIds, moderatorId];
 
     const topicCreateMany = topicIds
       ? topicIds.map((topicId) => ({
@@ -218,6 +228,21 @@ export class ForumService {
           },
           createMany: userCreateMany,
         },
+        conversation: isAdmin
+          ? {
+              create: {
+                displayName: name,
+                avatarUrl: avatarUrl,
+                users: {
+                  createMany: {
+                    data: allUserIds.map((userId) => ({
+                      userId,
+                    })),
+                  },
+                },
+              },
+            }
+          : undefined,
         topics: !isHomeRoom
           ? {
               createMany: {
@@ -314,6 +339,11 @@ export class ForumService {
         where: { id: forumId },
         data: {
           avatarUrl,
+          conversation: {
+            update: {
+              avatarUrl,
+            },
+          },
         },
       });
     }
@@ -366,6 +396,11 @@ export class ForumService {
         where: { id: forumId },
         data: {
           name,
+          conversation: {
+            update: {
+              displayName: name,
+            },
+          },
         },
       });
     }
@@ -405,6 +440,15 @@ export class ForumService {
   ): Promise<void> {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id: forumId },
+      select: {
+        status: true,
+        modId: true,
+        conversation: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
 
     if (forum.status === ResourceStatus.PENDING) {
@@ -420,7 +464,7 @@ export class ForumService {
       throw new ForbiddenException();
     }
 
-    await this.userService.validateUserIds(dto.userIds);
+    const users = await this.userService.validateUserIds(dto.userIds);
 
     const userToForum = await this.dbContext.userToForum.findMany({
       where: {
@@ -445,8 +489,33 @@ export class ForumService {
       };
     });
 
-    await this.dbContext.userToForum.createMany({
-      data,
+    await this.dbContext.$transaction(async (trx) => {
+      await Promise.all([
+        trx.userToForum.createMany({
+          data,
+        }),
+
+        await trx.conversation.update({
+          where: {
+            forumId,
+          },
+          data: {
+            users: {
+              createMany: {
+                data: dto.userIds.map((userId) => ({
+                  userId,
+                })),
+                skipDuplicates: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      this.event.emit(MessageEvent.CONVERSATION_JOINED, {
+        users,
+        conversationId: forum.conversation.id,
+      });
     });
   }
 
@@ -529,10 +598,9 @@ export class ForumService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null
-      }
-      
-    })
+        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+      };
+    });
 
     return Pagination.of({ take, skip }, total, postResponse);
   }
@@ -610,8 +678,15 @@ export class ForumService {
       },
       select: {
         modId: true,
+        conversation: {
+          select: { id: true },
+        },
+        users: true,
+        name: true,
+        avatarUrl: true,
       },
     });
+
     if (user.id !== forum.modId) {
       throw new BadRequestException('You do not have permission to view this');
     }
@@ -623,6 +698,10 @@ export class ForumService {
           forumId,
         },
       },
+      select: {
+        status: true,
+        user: selectUser,
+      },
     });
 
     if (!request || request.status === status) {
@@ -630,16 +709,35 @@ export class ForumService {
     }
 
     if (status === ResourceStatus.DELETED) {
-      await this.dbContext.userToForum.delete({
-        where: {
-          userId_forumId: {
-            userId,
-            forumId,
-          },
-        },
+      await this.dbContext.$transaction(async (trx) => {
+        await Promise.all([
+          trx.userToForum.delete({
+            where: {
+              userId_forumId: {
+                userId,
+                forumId,
+              },
+            },
+          }),
+          forum.conversation
+            ? trx.userToConversation.delete({
+                where: {
+                  conversationId_userId: {
+                    conversationId: forum.conversation.id,
+                    userId,
+                  },
+                },
+              })
+            : undefined,
+        ]);
       });
+
       return;
     }
+
+    const forumActiveUsers = forum.users.filter(
+      (user) => user.status === ResourceStatus.ACTIVE,
+    );
 
     await this.dbContext.userToForum.update({
       where: {
@@ -650,6 +748,23 @@ export class ForumService {
       },
       data: {
         status,
+        forum: {
+          update: {
+            conversation: {
+              create: {
+                displayName: forum.name,
+                avatarUrl: forum.avatarUrl,
+                users: {
+                  createMany: {
+                    data: forumActiveUsers.map(({ userId }) => ({
+                      userId,
+                    })),
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -706,5 +821,37 @@ export class ForumService {
         type: 'desc',
       },
     });
+  }
+
+  async exitForum(forumId: string, user: RequestUser) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: {
+        id: forumId,
+      },
+      select: {
+        users: true,
+        status: true,
+      },
+    });
+
+    const isInForum = forum.users.some(
+      ({ userId, status }) =>
+        userId === user.id && status === ResourceStatus.ACTIVE,
+    );
+
+    if (!isInForum) {
+      throw new BadRequestException('You are not in this forum');
+    }
+
+    await this.dbContext.userToForum.delete({
+      where: {
+        userId_forumId: {
+          userId: user.id,
+          forumId,
+        },
+      },
+    });
+
+    this.logger.log(`${user.id} left forum ${forumId}`);
   }
 }

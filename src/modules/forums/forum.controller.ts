@@ -22,8 +22,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from 'src/common/decorator';
-import { UserRole } from 'src/common/types/enum';
+import { Roles } from '@common/decorator';
+import { UserRole } from '@common/types/enum';
 import { AccessTokenGuard } from 'src/guard';
 import { PaginatedResult } from 'src/providers';
 import {
@@ -35,7 +35,6 @@ import {
 } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
-import { Forum } from '@prisma/client';
 import { ForumRequestDto } from './dto/forum-request.dto';
 
 @ApiBearerAuth()
@@ -142,7 +141,7 @@ export class ForumController {
   async getPostsOfForum(
     @Param() { id }: UUIDParam,
     @Query() query: GetAllPostsDto,
-    @ReqUser('id') userId: string
+    @ReqUser('id') userId: string,
   ) {
     return await this.forumService.getPostsOfForum(id, query, userId);
   }
@@ -179,5 +178,18 @@ export class ForumController {
     @ReqUser() user: RequestUser,
   ) {
     return this.forumService.patchForumRequests(id, request, user);
+  }
+
+  @ApiOperation({
+    description: 'Exit a forum',
+  })
+  @Patch(':id/exit')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async exitForum(
+    @Param() { id }: UUIDParam,
+
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.forumService.exitForum(id, user);
   }
 }

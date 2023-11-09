@@ -1,11 +1,20 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Patch, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
-import { AccessTokenGuard } from 'src/guard';
-import { NotificationService } from './notification.service';
 import { ReqUser } from '@common/decorator/request-user.decorator';
 import { UUIDParam } from '@common/types';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { AccessTokenGuard } from 'src/guard';
 import { GetNotificationDto } from './dto';
-import { Notification } from '@prisma/client';
+import { NotificationResponse } from './interfaces/notification-response.interface';
+import { NotificationService } from './notification.service';
 
 @ApiBearerAuth()
 @Controller({
@@ -22,12 +31,15 @@ export class NotificationController {
   })
   @Get()
   @HttpCode(HttpStatus.OK)
-  getAllNotifications(@ReqUser('id') userId: string, @Query() dto: GetNotificationDto): Promise<Notification[]> {
+  getAllNotifications(
+    @ReqUser('id') userId: string,
+    @Query() dto: GetNotificationDto,
+  ): Promise<NotificationResponse> {
     return this.notificationService.getAllNotifications(userId, dto);
   }
 
   @ApiProperty({
-    description: 'Mark a notification as read'
+    description: 'Mark a notification as read',
   })
   @Patch(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

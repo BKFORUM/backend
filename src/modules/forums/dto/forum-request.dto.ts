@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ResourceStatus } from '@prisma/client';
-import { IsEnum, IsUUID } from 'class-validator';
+import { IsEnum, IsIn, IsUUID } from 'class-validator';
 
 export class ForumRequestDto {
   @ApiProperty({
@@ -15,5 +15,6 @@ export class ForumRequestDto {
     example: `Available values: ${Object.values(ResourceStatus)}`,
   })
   @IsEnum(ResourceStatus)
+  @IsIn([ResourceStatus.ACTIVE, ResourceStatus.DELETED])
   status: ResourceStatus;
 }
