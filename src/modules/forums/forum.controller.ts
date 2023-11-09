@@ -22,8 +22,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from 'src/common/decorator';
-import { UserRole } from 'src/common/types/enum';
+import { Roles } from '@common/decorator';
+import { UserRole } from '@common/types/enum';
 import { AccessTokenGuard } from 'src/guard';
 import { PaginatedResult } from 'src/providers';
 import {
@@ -35,7 +35,6 @@ import {
 } from './dto';
 import { ForumService } from './forum.service';
 import { ForumResponse } from './interfaces';
-import { Forum } from '@prisma/client';
 import { ForumRequestDto } from './dto/forum-request.dto';
 
 @ApiBearerAuth()
