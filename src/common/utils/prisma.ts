@@ -16,7 +16,7 @@ export const getOrderBy = <T>(option: {
   const { defaultValue, order, mappedOrder } = option;
   if (!order) {
     return {
-      [defaultValue]: Prisma.SortOrder.asc,
+      [defaultValue]: Prisma.SortOrder.desc,
     };
   }
 

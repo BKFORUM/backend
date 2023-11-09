@@ -66,20 +66,16 @@ export class ForumService {
       });
     }
 
-    let orderBy: Prisma.ForumOrderByWithRelationInput = {};
-
     const mappedOrderType = {
       moderator: 'moderator.fullName',
       totalUsers: 'users._count',
     };
 
-    if (order) {
-      orderBy = getOrderBy<Forum>({
-        defaultValue: 'createdAt',
-        order,
-        mappedOrder: mappedOrderType,
-      });
-    }
+    let orderBy: Prisma.ForumOrderByWithRelationInput = getOrderBy<Forum>({
+      defaultValue: 'createdAt',
+      order,
+      mappedOrder: mappedOrderType,
+    });
 
     const [total, forums] = await Promise.all([
       this.dbContext.forum.count({

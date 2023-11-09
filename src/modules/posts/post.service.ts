@@ -47,11 +47,10 @@ export class PostService {
       });
     }
 
-    let orderBy: Prisma.PostOrderByWithRelationInput = {};
-
-    if (order) {
-      orderBy = getOrderBy({ defaultValue: 'createdAt', order });
-    }
+    let orderBy: Prisma.PostOrderByWithRelationInput = getOrderBy({
+      defaultValue: 'createdAt',
+      order,
+    });
 
     const [total, posts] = await Promise.all([
       this.dbContext.post.count({
@@ -131,11 +130,10 @@ export class PostService {
       });
     }
 
-    let orderBy: Prisma.PostOrderByWithRelationInput = {};
-
-    if (order) {
-      orderBy = getOrderBy({ defaultValue: 'createdAt', order });
-    }
+    let orderBy: Prisma.PostOrderByWithRelationInput = getOrderBy({
+      defaultValue: 'createdAt',
+      order,
+    });
 
     const [total, posts] = await Promise.all([
       this.dbContext.post.count({
@@ -454,10 +452,7 @@ export class PostService {
     });
   }
 
-  async getComments(
-    postId: string,
-    dto: GetCommentDto,
-  ) {
+  async getComments(postId: string, dto: GetCommentDto) {
     const [comments, totalRecords] = await Promise.all([
       this.dbContext.comment.findMany({
         where: {
@@ -489,7 +484,7 @@ export class PostService {
     return {
       totalRecords,
       data: comments,
-    }
+    };
   }
 
   async likePost(postId: string, userId: string): Promise<Like> {
