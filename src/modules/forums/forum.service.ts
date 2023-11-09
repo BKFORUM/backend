@@ -229,19 +229,21 @@ export class ForumService {
           },
           createMany: userCreateMany,
         },
-        conversation: {
-          create: {
-            displayName: name,
-            avatarUrl: avatarUrl,
-            users: {
-              createMany: {
-                data: allUserIds.map((userId) => ({
-                  userId,
-                })),
+        conversation: isAdmin
+          ? {
+              create: {
+                displayName: name,
+                avatarUrl: avatarUrl,
+                users: {
+                  createMany: {
+                    data: allUserIds.map((userId) => ({
+                      userId,
+                    })),
+                  },
+                },
               },
-            },
-          },
-        },
+            }
+          : undefined,
         topics: !isHomeRoom
           ? {
               createMany: {
@@ -338,6 +340,11 @@ export class ForumService {
         where: { id: forumId },
         data: {
           avatarUrl,
+          conversation: {
+            update: {
+              avatarUrl,
+            },
+          },
         },
       });
     }
@@ -390,6 +397,11 @@ export class ForumService {
         where: { id: forumId },
         data: {
           name,
+          conversation: {
+            update: {
+              displayName: name,
+            },
+          },
         },
       });
     }
@@ -670,6 +682,9 @@ export class ForumService {
         conversation: {
           select: { id: true },
         },
+        users: true,
+        name: true,
+        avatarUrl: true,
       },
     });
 
@@ -705,24 +720,25 @@ export class ForumService {
               },
             },
           }),
-          trx.userToConversation.delete({
-            where: {
-              conversationId_userId: {
-                conversationId: forum.conversation.id,
-                userId,
-              },
-            },
-          }),
+          forum.conversation
+            ? trx.userToConversation.delete({
+                where: {
+                  conversationId_userId: {
+                    conversationId: forum.conversation.id,
+                    userId,
+                  },
+                },
+              })
+            : undefined,
         ]);
-
-        this.event.emit(MessageEvent.CONVERSATION_LEFT, {
-          user: request.user,
-          conversationId: forum.conversation,
-        });
       });
 
       return;
     }
+
+    const forumActiveUsers = forum.users.filter(
+      (user) => user.status === ResourceStatus.ACTIVE,
+    );
 
     await this.dbContext.userToForum.update({
       where: {
@@ -733,6 +749,23 @@ export class ForumService {
       },
       data: {
         status,
+        forum: {
+          update: {
+            conversation: {
+              create: {
+                displayName: forum.name,
+                avatarUrl: forum.avatarUrl,
+                users: {
+                  createMany: {
+                    data: forumActiveUsers.map(({ userId }) => ({
+                      userId,
+                    })),
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -789,5 +822,37 @@ export class ForumService {
         type: 'desc',
       },
     });
+  }
+
+  async exitForum(forumId: string, user: RequestUser) {
+    const forum = await this.dbContext.forum.findUniqueOrThrow({
+      where: {
+        id: forumId,
+      },
+      select: {
+        users: true,
+        status: true,
+      },
+    });
+
+    const isInForum = forum.users.some(
+      ({ userId, status }) =>
+        userId === user.id && status === ResourceStatus.ACTIVE,
+    );
+
+    if (!isInForum) {
+      throw new BadRequestException('You are not in this forum');
+    }
+
+    await this.dbContext.userToForum.delete({
+      where: {
+        userId_forumId: {
+          userId: user.id,
+          forumId,
+        },
+      },
+    });
+
+    this.logger.log(`${user.id} left forum ${forumId}`);
   }
 }
