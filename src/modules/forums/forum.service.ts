@@ -202,7 +202,7 @@ export class ForumService {
         }
       : undefined;
 
-    const allUserIds = [...userIds, moderatorId];
+    const allUserIds = userIds ? [...userIds, moderatorId] : [moderatorId];
 
     const topicCreateMany = topicIds
       ? topicIds.map((topicId) => ({
