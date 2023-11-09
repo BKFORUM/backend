@@ -16,6 +16,7 @@ import { ConversationModule } from './modules/conversation/conversation.module';
 import { MessageModule } from './modules/message/message.module';
 import { CommentModule } from '@modules/comments/comment.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationModule } from '@modules/notification';
 import { GatewayModule } from './gateway/gateway.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { GatewayModule } from './gateway/gateway.module';
     ConversationModule,
     MessageModule,
     CommentModule,
+    NotificationModule,
   ],
   controllers: [AppController],
 })

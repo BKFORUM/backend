@@ -3,4 +3,6 @@ export enum MessageEvent {
   CONVERSATION_JOINED = 'conversation.joined',
   CONVERSATION_CREATED = 'conversation.created',
   CONVERSATION_LEFT = 'conversation.left',
+  COMMENT_CREATED = 'comment.created',
+  LIKE_CREATED = 'like.created',
 }

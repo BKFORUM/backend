@@ -1,17 +1,16 @@
+import { MailService } from '@modules/mail/mail.service';
 import {
   BadRequestException,
   ForbiddenException,
-  Injectable,
-  UnauthorizedException,
+  Injectable
 } from '@nestjs/common';
-import { UserService } from '../user';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserDto } from '../user/dto';
+import { JwtService } from '@nestjs/jwt';
 import { RequestUser, compareHash, hashPassword } from 'src/common';
-import { getUsersPayload } from './dto/getUserPayload.dto';
 import { PrismaService } from 'src/database/services';
-import { MailService } from '@modules/mail/mail.service';
+import { UserService } from '../user';
+import { CreateUserDto } from '../user/dto';
+import { getUsersPayload } from './dto/getUserPayload.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
