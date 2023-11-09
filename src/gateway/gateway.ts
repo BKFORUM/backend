@@ -30,6 +30,7 @@ import {
   GetConversationPayload,
   GetMessageResponse,
 } from '@modules/conversation/interface/get-conversation.payload';
+import { UserResponse } from '@modules/user/interfaces';
 
 @WebSocketGateway({
   cors: {
@@ -114,5 +115,29 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { conversationId } = payload;
     this.logger.log(`Message in ${conversationId}`);
     this.server.to(conversationId).emit('onMessage', payload);
+  }
+
+  @OnEvent(MessageEvent.CONVERSATION_CREATED)
+  handleConversationCreateEvent(payload: GetConversationPayload) {
+    const { users, id } = payload;
+    users.forEach(({ userId }) => {
+      const socket = this.sessions.getUserSocket(userId);
+      if (socket) socket.join(id);
+    });
+  }
+
+  @OnEvent(MessageEvent.CONVERSATION_JOINED)
+  handleConversationJoinedEvent(payload: {
+    users: UserResponse[];
+    conversationId: string;
+  }) {
+    const { users, conversationId } = payload;
+    this.server.to(conversationId).emit('onAddUsersConversation', users);
+  }
+
+  @OnEvent(MessageEvent.CONVERSATION_LEFT)
+  handleLeft(payload: { user: UserResponse; conversationId: string }) {
+    const { user, conversationId } = payload;
+    this.server.to(conversationId).emit('onUserLeaveConversation', user);
   }
 }

@@ -142,7 +142,7 @@ export class ForumController {
   async getPostsOfForum(
     @Param() { id }: UUIDParam,
     @Query() query: GetAllPostsDto,
-    @ReqUser('id') userId: string
+    @ReqUser('id') userId: string,
   ) {
     return await this.forumService.getPostsOfForum(id, query, userId);
   }
@@ -179,5 +179,18 @@ export class ForumController {
     @ReqUser() user: RequestUser,
   ) {
     return this.forumService.patchForumRequests(id, request, user);
+  }
+
+  @ApiOperation({
+    description: 'Exit a forum',
+  })
+  @Patch(':id/exit')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async exitForum(
+    @Param() { id }: UUIDParam,
+
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.forumService.exitForum(id, user);
   }
 }
