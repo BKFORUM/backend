@@ -38,6 +38,11 @@ export class UserService {
     return await hashPassword(password);
   }
 
+  validateDob(dob: Date) {
+    const age = new Date().getFullYear() - new Date(dob).getFullYear() + 1;
+    return age >= 18;
+  }
+
   createUser = async (data: CreateUserDto) => {
     const {
       fullName,
@@ -58,6 +63,11 @@ export class UserService {
 
     if (!rolesData) {
       throw new BadRequestException('The roles provided are invalid');
+    }
+
+    const validateDob = this.validateDob(dateOfBirth);
+    if (!validateDob) {
+      throw new BadRequestException('User must be more than 18 years old');
     }
 
     const rolesToAdd =
@@ -82,7 +92,7 @@ export class UserService {
         fullName,
         email,
         password: hashPassword,
-        dateOfBirth: new Date(dateOfBirth).toISOString(),
+        dateOfBirth: new Date(dateOfBirth),
         gender,
         facultyId,
         type,
@@ -319,6 +329,13 @@ export class UserService {
         password: true,
       },
     });
+
+    if (dateOfBirth) {
+      const validateDob = this.validateDob(dateOfBirth);
+      if (!validateDob) {
+        throw new BadRequestException('User must be more than 18 years old');
+      }
+    }
 
     if (facultyId) {
       await this.facultyService.getFacultyById(facultyId);

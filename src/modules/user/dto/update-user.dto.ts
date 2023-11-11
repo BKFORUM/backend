@@ -4,7 +4,9 @@ import {
   IsArray,
   IsEnum,
   IsISO8601,
+  IsMobilePhone,
   IsNotEmpty,
+  IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
@@ -13,6 +15,7 @@ import {
 } from 'class-validator';
 import { Gender, UserType } from '@prisma/client';
 import { UserRole } from '@common/types';
+import { Transform, Type } from 'class-transformer';
 
 export class UpdateUserDto {
   @ApiPropertyOptional()
@@ -56,9 +59,9 @@ export class UpdateUserDto {
   @ApiPropertyOptional({
     description: 'Date of birth',
   })
-  @IsISO8601()
   @IsOptional()
   @IsNotEmpty()
+  @IsISO8601({ strict: true })
   dateOfBirth?: Date;
 
   @ApiPropertyOptional({
@@ -73,6 +76,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @MaxLength(11)
+  @IsMobilePhone()
   @IsString()
   phoneNumber?: string;
 

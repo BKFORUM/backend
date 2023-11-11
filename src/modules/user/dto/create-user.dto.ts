@@ -7,7 +7,10 @@ import {
   IsEmail,
   IsEnum,
   IsISO8601,
+  IsMobilePhone,
   IsNotEmpty,
+  IsNumber,
+  IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
@@ -81,6 +84,7 @@ export class CreateUserDto {
   })
   @IsOptional()
   @MaxLength(11)
+  @IsMobilePhone()
   @IsString()
   phoneNumber: string;
 
