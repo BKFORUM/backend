@@ -30,6 +30,9 @@ export class NotificationService {
         modelName: String(data.modelName),
         userId: data.userId,
       },
+      include: {
+        user: true,
+      }
     });
     this.eventEmitter.emit(messageEvent, notification, userId);
 
@@ -42,6 +45,9 @@ export class NotificationService {
   ): Promise<NotificationResponse> {
     const [notifications, totalRecords] = await Promise.all([this.dbContext.notification.findMany({
       where: { userId },
+      include: {
+        user: true,
+      },
       skip: dto.skip,
       take: dto.take,
     }), this.dbContext.notification.count({ where: { userId } })])
