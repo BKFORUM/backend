@@ -465,7 +465,7 @@ export class PostService {
         comment.post.userId,
         MessageEvent.COMMENT_CREATED,
         {
-          content: `'${user.fullName}' đã đăng một bình luận vào bài viết của bạn`,
+          content: `${user.fullName} đã đăng một bình luận vào bài viết của bạn`,
           modelId: comment.postId,
           modelName: 'post',
           userId: comment.post.userId,
@@ -547,7 +547,7 @@ export class PostService {
         postOwnerId,
         MessageEvent.LIKE_CREATED,
         {
-          content: `'${user.fullName}' đã thích một bài viết của bạn`,
+          content: `${user.fullName} đã thích một bài viết của bạn`,
           modelId: like.postId,
           modelName: 'post',
           userId: postOwnerId,
