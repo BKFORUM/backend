@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { $Enums, PrismaClient } from '@prisma/client';
 import { UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
 import { Socket } from 'socket.io';
 export type JwtPayload = {
@@ -41,3 +41,18 @@ export type Models = keyof Omit<
   | '$use'
   | '$extends'
 >;
+
+export type UserResponse = {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  fullName: string;
+  email: string;
+  dateOfBirth: Date;
+  gender: $Enums.Gender;
+  phoneNumber: string;
+  address: string;
+  avatarUrl: string;
+  type: $Enums.UserType;
+  facultyId: string;
+};

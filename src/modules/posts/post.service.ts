@@ -363,8 +363,8 @@ export class PostService {
           select: {
             comments: true,
             likes: true,
-          }
-        }
+          },
+        },
       },
     });
 
@@ -450,13 +450,17 @@ export class PostService {
         user: {
           select: {
             id: true,
+            createdAt: true,
+            updatedAt: true,
             fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
             phoneNumber: true,
             address: true,
             avatarUrl: true,
-            dateOfBirth: true,
-            email: true,
-            gender: true,
+            type: true,
+            facultyId: true,
           },
         },
         post: true,
@@ -468,18 +472,17 @@ export class PostService {
 
     if (postOwnerId !== commentOwnerId) {
       await this.notificationService.notifyNotification(
+        comment.user,
         comment.post.userId,
         MessageEvent.COMMENT_CREATED,
         {
           content: `${user.fullName} đã đăng một bình luận vào bài viết của bạn`,
           modelId: comment.postId,
           modelName: 'post',
-          userId: comment.post.userId,
+          receiverId: comment.post.userId,
         },
       );
     }
-
-    
 
     return comment;
   }
@@ -550,13 +553,14 @@ export class PostService {
 
     if (postOwnerId !== likeOwnerId) {
       await this.notificationService.notifyNotification(
+        like.user,
         postOwnerId,
         MessageEvent.LIKE_CREATED,
         {
           content: `${user.fullName} đã thích một bài viết của bạn`,
           modelId: like.postId,
           modelName: 'post',
-          userId: postOwnerId,
+          receiverId: postOwnerId,
         },
       );
     }

@@ -64,19 +64,20 @@ model User {
   type         UserType @default(STUDENT)
   facultyId    String   @map("faculty_id") @db.Uuid
 
-  faculty          Faculty              @relation(fields: [facultyId], references: [id], map: "fk_user_faculty")
-  roles            UserToRole[]
-  forums           Forum[]
-  userToForum      UserToForum[]
-  posts            Post[]
-  comments         Comment[]
-  likes            Like[]
-  tokens           VerificationToken[]
-  documents        PostDocument[]
-  sentRequests     Friendship[]         @relation("sender_friendships")
-  receivedRequests Friendship[]         @relation("receiver_friendships")
-  conversations    UserToConversation[]
-  notifications    Notification[]
+  faculty           Faculty              @relation(fields: [facultyId], references: [id], map: "fk_user_faculty")
+  roles             UserToRole[]
+  forums            Forum[]
+  userToForum       UserToForum[]
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  tokens            VerificationToken[]
+  documents         PostDocument[]
+  sentRequests      Friendship[]         @relation("sender_friendships")
+  receivedRequests  Friendship[]         @relation("receiver_friendships")
+  conversations     UserToConversation[]
+  notifications     Notification[]       @relation("receiver_notifications")
+  sentNotifications Notification[]       @relation("sender_notifications")
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -196,13 +197,13 @@ model Forum {
   modId     String         @map("mod_id") @db.Uuid
   status    ResourceStatus @default(PENDING)
   type      ForumType      @default(HOMEROOM)
-  avatarUrl String?        @db.Text          @map("avatar_url") 
+  avatarUrl String?        @map("avatar_url") @db.Text
 
-  moderator User           @relation(fields: [modId], references: [id], onDelete: Cascade)
-  users     UserToForum[]
-  posts     Post[]
-  topics    ForumToTopic[]
-  conversation  Conversation?
+  moderator    User           @relation(fields: [modId], references: [id], onDelete: Cascade)
+  users        UserToForum[]
+  posts        Post[]
+  topics       ForumToTopic[]
+  conversation Conversation?
 
   @@map("forum")
 }
@@ -241,12 +242,12 @@ model Post {
 }
 
 model Comment {
-  id        String         @id(map: "pk_comment") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  userId    String         @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
-  postId    String         @default(dbgenerated("uuid_generate_v4()")) @map("post_id") @db.Uuid
-  content   String         @db.Text
+  id        String   @id(map: "pk_comment") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String   @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  postId    String   @default(dbgenerated("uuid_generate_v4()")) @map("post_id") @db.Uuid
+  content   String   @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -329,25 +330,25 @@ model Friendship {
 }
 
 model Conversation {
-  id          String           @id(map: "pk_conversation") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  displayName String?          @map("display_name") @db.VarChar(50)
-  type        ConversationType @default(CHAT)
-  avatarUrl   String?           @db.Text @map("avatar_url")
-  lastMessageId String?       @db.Uuid() @map("last_message_id") @unique
-  forumId     String?         @db.Uuid @map("forum_id") @unique
+  id            String           @id(map: "pk_conversation") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  displayName   String?          @map("display_name") @db.VarChar(50)
+  type          ConversationType @default(CHAT)
+  avatarUrl     String?          @map("avatar_url") @db.Text
+  lastMessageId String?          @unique @map("last_message_id") @db.Uuid()
+  forumId       String?          @unique @map("forum_id") @db.Uuid
 
-  users    UserToConversation[]
-  messages Message[]
-  lastMessage Message? @relation("conversation_last_message",fields: [lastMessageId],references: [id])
-  forum     Forum?  @relation(fields: [forumId],references: [id])
+  users       UserToConversation[]
+  messages    Message[]
+  lastMessage Message?             @relation("conversation_last_message", fields: [lastMessageId], references: [id])
+  forum       Forum?               @relation(fields: [forumId], references: [id])
 
   @@map("conversation")
 }
 
 model UserToConversation {
-  id         String           @id(map: "pk_user_to_conversation") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  id             String   @id(map: "pk_user_to_conversation") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   conversationId String   @map("conversation_id") @db.Uuid
   userId         String   @map("user_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -371,25 +372,26 @@ model Message {
   content        String      @db.Text
   type           MessageType @default(TEXT)
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  lastMessageOfConversation Conversation? @relation("conversation_last_message")
-  author         UserToConversation         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  conversation              Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lastMessageOfConversation Conversation?      @relation("conversation_last_message")
+  author                    UserToConversation @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("message")
 }
 
 model Notification {
-  id        String   @id(map: "pk_notification") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  content   String   @db.VarChar(255)
-  modelId   String   @map("model_id") @db.Uuid
-  modelName String   @map("model_name") @db.VarChar(50)
-  userId    String   @map("user_id") @db.Uuid
+  id        String    @id(map: "pk_notification") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content   String    @db.VarChar(255)
+  modelId   String    @map("model_id") @db.Uuid
+  modelName String    @map("model_name") @db.VarChar(50)
+  userId    String    @map("user_id") @db.Uuid
+  senderId  String?   @map("sender_id") @db.Uuid
   readAt    DateTime? @map("read_at") @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User  @relation("receiver_notifications", fields: [userId], references: [id], onDelete: Cascade)
+  sender User? @relation("sender_notifications", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("notification")
 }

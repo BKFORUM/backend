@@ -1,7 +1,6 @@
-import { Models } from '@common/types';
+import { Models, UserResponse } from '@common/types';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Notification } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
 import { GetNotificationDto } from './dto';
 import { NotificationResponse } from './interfaces/notification-response.interface';
@@ -14,27 +13,44 @@ export class NotificationService {
   ) {}
 
   async notifyNotification(
-    userId: string,
+    sender: UserResponse,
+    receiverId: string,
     messageEvent: string,
     data: {
       content: string;
       modelName: Models;
       modelId: string;
-      userId: string;
+      receiverId: string;
     },
-  ): Promise<Notification> {
+  ) {
     const notification = await this.dbContext.notification.create({
       data: {
         content: data.content,
         modelId: data.modelId,
         modelName: String(data.modelName),
-        userId: data.userId,
+        userId: data.receiverId,
+        senderId: sender.id,
       },
       include: {
-        user: true,
-      }
+        sender: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
+      },
     });
-    this.eventEmitter.emit(messageEvent, notification, userId);
+    this.eventEmitter.emit(messageEvent, notification, receiverId);
 
     return notification;
   }
@@ -43,19 +59,24 @@ export class NotificationService {
     userId: string,
     dto: GetNotificationDto,
   ): Promise<NotificationResponse> {
-    const [notifications, totalRecords] = await Promise.all([this.dbContext.notification.findMany({
-      where: { userId },
-      include: {
-        user: true,
-      },
-      skip: dto.skip,
-      take: dto.take,
-    }), this.dbContext.notification.count({ where: { userId } })])
+    const [notifications, totalRecords, totalUnreadNotifications] = await Promise.all([
+      this.dbContext.notification.findMany({
+        include: {
+          sender: true,
+        },
+        where: { userId },
+        skip: dto.skip,
+        take: dto.take,
+      }),
+      this.dbContext.notification.count({ where: { userId } }),
+      this.dbContext.notification.count({ where: { userId, readAt: null } }),
+    ]);
 
     return {
       data: notifications,
-      totalRecords
-    }
+      totalRecords,
+      totalUnreadNotifications,
+    };
   }
 
   async markAsReadNotification(id: string): Promise<void> {
