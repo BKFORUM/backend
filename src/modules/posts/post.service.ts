@@ -359,6 +359,12 @@ export class PostService {
             modId: true,
           },
         },
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          }
+        }
       },
     });
 
