@@ -698,7 +698,7 @@ export class ForumService {
 
     const isAblePatch =
       status === ResourceStatus.DELETED
-        ? user.id === request.user.id
+        ? user.id === request.user.id || user.id === forum.modId
         : user.id === forum.modId;
     if (!isAblePatch) {
       throw new BadRequestException(
