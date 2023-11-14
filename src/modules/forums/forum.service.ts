@@ -1,4 +1,5 @@
 import { NOT_MEMBER, RequestUser, UserRole } from '@common/types';
+import { NotificationService } from '@modules/notification';
 import { GetAllPostsDto } from '@modules/posts/dto/get-all-posts.dto';
 import { TopicService } from '@modules/topic';
 import { UserService } from '@modules/user';
@@ -12,6 +13,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Forum,
   ForumType,
@@ -22,6 +24,7 @@ import {
 import { difference, first } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
+import { MessageEvent } from 'src/gateway/enum';
 import { PaginatedResult, Pagination } from 'src/providers';
 import {
   AddUsersToForumDto,
@@ -31,8 +34,6 @@ import {
 } from './dto';
 import { ForumRequestDto } from './dto/forum-request.dto';
 import { ForumResponse } from './interfaces';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { MessageEvent } from 'src/gateway/enum';
 
 @Injectable()
 export class ForumService {
@@ -42,6 +43,7 @@ export class ForumService {
     private readonly userService: UserService,
     private readonly topicService: TopicService,
     private readonly event: EventEmitter2,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private readonly logger = new Logger(ForumService.name);
@@ -604,7 +606,7 @@ export class ForumService {
   async createForumRequest(id: string, user: RequestUser) {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id },
-      select: {
+      include: {
         users: true,
       },
     });
@@ -621,9 +623,39 @@ export class ForumService {
         status: ResourceStatus.PENDING,
         userId: user.id,
       },
+      select: {
+        user: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
+      },
     });
 
-    this.logger.log('Created a forum request', { request });
+    await this.notificationService.notifyNotification(
+      request.user,
+      forum.modId,
+      MessageEvent.REQUEST_FORUM_CREATED,
+      {
+        content: `${user.fullName} đã yêu cầu vào forum của bạn`,
+        modelId: forum.id,
+        modelName: 'forum',
+        receiverId: forum.modId,
+      },
+    );
+
+    await this.logger.log('Created a forum request', { request });
   }
 
   async getForumRequests(id: string, user: RequestUser) {
@@ -680,6 +712,22 @@ export class ForumService {
         users: true,
         name: true,
         avatarUrl: true,
+        moderator: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
       },
     });
 
@@ -763,6 +811,18 @@ export class ForumService {
         },
       },
     });
+
+    await this.notificationService.notifyNotification(
+      forum.moderator,
+      userId,
+      MessageEvent.REQUEST_FORUM_APPROVED,
+      {
+        content: `${user.fullName} đã chấp nhận yêu cầu vào forum của bạn`,
+        modelId: forumId,
+        modelName: 'forum',
+        receiverId: forum.modId,
+      },
+    );
 
     this.logger.log('Patch forum request successfully', { request });
   }

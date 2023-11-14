@@ -370,6 +370,7 @@ export class PostService {
 
     return {
       ...post,
+      likedAt: post.likes.length ? first(post.likes).createdAt : null,
       documents: post.documents.map((document) => ({
         id: document.id,
         fileName: document.fileName.split('_')[0],
