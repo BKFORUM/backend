@@ -48,6 +48,18 @@ enum ConversationType {
   CHAT
 }
 
+enum EventType {
+  GENERAL
+  FACULTY
+  FORUM
+}
+
+enum EventStatus {
+  UPCOMING
+  HAPPENING
+  DONE
+}
+
 model User {
   id           String   @id(map: "pk_user") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -78,6 +90,7 @@ model User {
   conversations     UserToConversation[]
   notifications     Notification[]       @relation("receiver_notifications")
   sentNotifications Notification[]       @relation("sender_notifications")
+  events            UserToEvent[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -103,7 +116,8 @@ model Faculty {
   name        String   @db.VarChar(50)
   displayName String   @db.VarChar(50)
 
-  users User[]
+  users  User[]
+  events Event[]
 
   @@unique([name], map: "ixuq_faculty_name")
   @@map("faculty")
@@ -204,6 +218,7 @@ model Forum {
   posts        Post[]
   topics       ForumToTopic[]
   conversation Conversation?
+  events       Event[]
 
   @@map("forum")
 }
@@ -394,4 +409,37 @@ model Notification {
   sender User? @relation("sender_notifications", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("notification")
+}
+
+model Event {
+  id          String      @id(map: "pk_event") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  forumId     String?     @map("forum_id") @db.Uuid
+  facultyId   String?     @map("faculty_id") @db.Uuid
+  avatarUrl   String?     @map("avatar_url") @db.Text
+  displayName String      @map("display_name") @db.VarChar(128)
+  startAt     DateTime    @map("start_at") @db.Timestamptz(6)
+  endAt       DateTime    @updatedAt @map("end_at") @db.Timestamptz(6)
+  status      EventStatus
+  type        EventType
+
+  forum   Forum?        @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  faculty Faculty?      @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  users   UserToEvent[]
+
+  @@map("event")
+}
+
+model UserToEvent {
+  userId    String   @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  eventId   String   @default(dbgenerated("uuid_generate_v4()")) @map("event_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId], map: "pk_user_to_event")
+  @@map("user_to_event")
 }
