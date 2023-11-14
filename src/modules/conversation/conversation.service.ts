@@ -101,6 +101,7 @@ export class ConversationService {
           displayName: true,
           lastMessage: true,
           type: true,
+          forumId: true,
           users: {
             select: {
               userId: true,
@@ -298,6 +299,7 @@ export class ConversationService {
             select: {
               id: true,
               displayName: true,
+              forumId: true,
               users: {
                 select: {
                   userId: true,

@@ -731,10 +731,6 @@ export class ForumService {
       },
     });
 
-    if (user.id !== forum.modId) {
-      throw new BadRequestException('You do not have permission to view this');
-    }
-
     const request = await this.dbContext.userToForum.findUniqueOrThrow({
       where: {
         userId_forumId: {
@@ -747,6 +743,16 @@ export class ForumService {
         user: selectUser,
       },
     });
+
+    const isAblePatch =
+      status === ResourceStatus.DELETED
+        ? user.id === request.user.id || user.id === forum.modId
+        : user.id === forum.modId;
+    if (!isAblePatch) {
+      throw new BadRequestException(
+        'You do not have permission to patch this request',
+      );
+    }
 
     if (!request || request.status === status) {
       throw new BadRequestException('The request is invalid');
