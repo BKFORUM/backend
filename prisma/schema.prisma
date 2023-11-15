@@ -50,7 +50,6 @@ enum ConversationType {
 
 enum EventType {
   GENERAL
-  FACULTY
   FORUM
 }
 
@@ -58,6 +57,7 @@ enum EventStatus {
   UPCOMING
   HAPPENING
   DONE
+  CANCELLED
 }
 
 model User {
