@@ -15,11 +15,13 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
+  ConversationType,
   Forum,
   ForumType,
   GroupUserType,
   Prisma,
   ResourceStatus,
+  UserToForum,
 } from '@prisma/client';
 import { difference, first } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
@@ -231,6 +233,7 @@ export class ForumService {
               create: {
                 displayName: name,
                 avatarUrl: avatarUrl,
+                type: ConversationType.GROUP_CHAT,
                 users: {
                   createMany: {
                     data: allUserIds.map((userId) => ({
@@ -309,6 +312,7 @@ export class ForumService {
       where: { id: forumId },
       include: {
         topics: true,
+        users: true,
       },
     });
     const isAbleEdit =
@@ -326,7 +330,7 @@ export class ForumService {
       this.updateTopics(forumId, topicForumIds, dto.topicIds),
       this.updateName(forumId, dto.name),
       this.updateType(forumId, dto.type),
-      this.updateStatus(forumId, dto.status),
+      this.updateStatus(forumId, forum, dto.status),
       this.updateAvatar(forumId, dto.avatarUrl),
     ]);
   }
@@ -415,12 +419,32 @@ export class ForumService {
     }
   }
 
-  async updateStatus(forumId: string, status?: ResourceStatus): Promise<void> {
+  async updateStatus(
+    forumId: string,
+    forum: Forum & { users: UserToForum[] },
+    status?: ResourceStatus,
+  ): Promise<void> {
+    const forumActiveUsers = forum.users.filter(
+      (user) => user.status === ResourceStatus.ACTIVE,
+    );
     if (status) {
       await this.dbContext.forum.update({
         where: { id: forumId },
         data: {
           status,
+          conversation: {
+            create: {
+              displayName: forum.name,
+              avatarUrl: forum.avatarUrl,
+              users: {
+                createMany: {
+                  data: forumActiveUsers.map(({ userId }) => ({
+                    userId,
+                  })),
+                },
+              },
+            },
+          },
         },
       });
     }
@@ -785,10 +809,6 @@ export class ForumService {
       return;
     }
 
-    const forumActiveUsers = forum.users.filter(
-      (user) => user.status === ResourceStatus.ACTIVE,
-    );
-
     await this.dbContext.userToForum.update({
       where: {
         userId_forumId: {
@@ -798,23 +818,6 @@ export class ForumService {
       },
       data: {
         status,
-        forum: {
-          update: {
-            conversation: {
-              create: {
-                displayName: forum.name,
-                avatarUrl: forum.avatarUrl,
-                users: {
-                  createMany: {
-                    data: forumActiveUsers.map(({ userId }) => ({
-                      userId,
-                    })),
-                  },
-                },
-              },
-            },
-          },
-        },
       },
     });
 
