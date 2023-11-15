@@ -181,4 +181,26 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
       })
     }
   }
+
+  @OnEvent(MessageEvent.REQUEST_POST_CREATED)
+  handlePostRequestCreatedForum(payload, userId: string) {
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
+
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onPostRequestCreated', payload);
+      })
+    }
+  }
+
+  @OnEvent(MessageEvent.REQUEST_POST_APPROVED)
+  handlePostRequestApprovedForum(payload, userId: string) {
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
+
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onPostRequestApproved', payload);
+      })
+    }
+  }
 }
