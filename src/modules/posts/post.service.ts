@@ -237,7 +237,7 @@ export class PostService {
 
   async patchPostStatus(
     id: string,
-    { id: userId }: RequestUser,
+    { id: userId, fullName }: RequestUser,
     status: ResourceStatus,
   ) {
     const post = await this.dbContext.post.findUniqueOrThrow({
@@ -248,6 +248,22 @@ export class PostService {
         forum: {
           select: {
             modId: true,
+            moderator: {
+              select: {
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+                fullName: true,
+                email: true,
+                dateOfBirth: true,
+                gender: true,
+                phoneNumber: true,
+                address: true,
+                avatarUrl: true,
+                type: true,
+                facultyId: true,
+              },
+            },
           },
         },
         documents: true,
@@ -260,7 +276,7 @@ export class PostService {
       throw new BadRequestException('You do not have permission');
     }
 
-    await this.dbContext.post.update({
+    const postUpdated = await this.dbContext.post.update({
       where: {
         id,
       },
@@ -268,6 +284,15 @@ export class PostService {
         status,
       },
     });
+
+    if (postUpdated.status === ResourceStatus.ACTIVE) {
+      await this.notificationService.notifyNotification(post.forum.moderator, post.userId, MessageEvent.REQUEST_POST_APPROVED, {
+        content: `đã phê duyệt bài đăng của bạn`,
+        modelId: post.id,
+        modelName: 'post',
+        receiverId: post.userId
+      });
+    }
   }
 
   async updatePost(
@@ -359,6 +384,7 @@ export class PostService {
             modId: true,
           },
         },
+        status: true,
         _count: {
           select: {
             comments: true,
@@ -431,7 +457,25 @@ export class PostService {
           create: documentsCreate,
         },
       },
+      include: {
+        user: true,
+        forum: true,
+      },
     });
+
+    if (post.status === ResourceStatus.PENDING) {
+      await this.notificationService.notifyNotification(
+        post.user,
+        post.forum.modId,
+        MessageEvent.REQUEST_POST_CREATED,
+        {
+          content: `đã đăng bài viết vào forum`,
+          modelId: post.id,
+          modelName: 'post',
+          receiverId: post.forum.modId,
+        },
+      );
+    }
 
     this.logger.log('Created a post record', { post });
   }
@@ -477,7 +521,7 @@ export class PostService {
         comment.post.userId,
         MessageEvent.COMMENT_CREATED,
         {
-          content: `${user.fullName} đã đăng một bình luận vào bài viết của bạn`,
+          content: `đã đăng một bình luận vào bài viết của bạn`,
           modelId: comment.postId,
           modelName: 'post',
           receiverId: comment.post.userId,
@@ -558,7 +602,7 @@ export class PostService {
         postOwnerId,
         MessageEvent.LIKE_CREATED,
         {
-          content: `${user.fullName} đã thích một bài viết của bạn`,
+          content: `đã thích một bài viết của bạn`,
           modelId: like.postId,
           modelName: 'post',
           receiverId: postOwnerId,
