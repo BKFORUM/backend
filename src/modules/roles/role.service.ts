@@ -37,11 +37,10 @@ export class RoleService {
       };
     }
 
-    let orderBy: Prisma.RoleOrderByWithRelationInput;
-
-    if (order) {
-      orderBy = getOrderBy<Role>({ defaultValue: 'createdAt', order });
-    }
+    let orderBy: Prisma.RoleOrderByWithRelationInput = getOrderBy<Role>({
+      defaultValue: 'updatedAt',
+      order,
+    });
 
     const [total, roles] = await Promise.all([
       this.dbContext.role.count({
@@ -211,14 +210,14 @@ export class RoleService {
     this.logger.log({ updatedRole }, 'updated role record');
   }
 
-  async getDefaultRole(){
+  async getDefaultRole() {
     const userRole = await this.dbContext.role.findMany({
-        where: {
-          name: 'USER',
-        },
-      });
+      where: {
+        name: 'USER',
+      },
+    });
 
-      return userRole;
+    return userRole;
   }
   async checkRoles(roles: string[]) {
     if (!roles || roles.length === 0) {

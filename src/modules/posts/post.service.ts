@@ -136,7 +136,7 @@ export class PostService {
     }
 
     let orderBy: Prisma.PostOrderByWithRelationInput = getOrderBy({
-      defaultValue: 'createdAt',
+      defaultValue: 'updatedAt',
       order,
     });
 

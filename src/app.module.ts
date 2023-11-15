@@ -18,6 +18,7 @@ import { CommentModule } from '@modules/comments/comment.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationModule } from '@modules/notification';
 import { GatewayModule } from './gateway/gateway.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   providers: [
@@ -31,6 +32,7 @@ import { GatewayModule } from './gateway/gateway.module';
       isGlobal: true,
     }),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     GatewayModule,
     CloudinaryModule,
     AuthModule,

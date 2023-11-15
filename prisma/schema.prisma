@@ -50,7 +50,6 @@ enum ConversationType {
 
 enum EventType {
   GENERAL
-  FACULTY
   FORUM
 }
 
@@ -58,6 +57,7 @@ enum EventStatus {
   UPCOMING
   HAPPENING
   DONE
+  CANCELLED
 }
 
 model User {
@@ -91,6 +91,8 @@ model User {
   notifications     Notification[]       @relation("receiver_notifications")
   sentNotifications Notification[]       @relation("sender_notifications")
   events            UserToEvent[]
+  eventComments     EventComment[]
+  eventDocuments    EventDocument[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -116,8 +118,7 @@ model Faculty {
   name        String   @db.VarChar(50)
   displayName String   @db.VarChar(50)
 
-  users  User[]
-  events Event[]
+  users User[]
 
   @@unique([name], map: "ixuq_faculty_name")
   @@map("faculty")
@@ -416,17 +417,17 @@ model Event {
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   forumId     String?     @map("forum_id") @db.Uuid
-  facultyId   String?     @map("faculty_id") @db.Uuid
-  avatarUrl   String?     @map("avatar_url") @db.Text
   displayName String      @map("display_name") @db.VarChar(128)
   startAt     DateTime    @map("start_at") @db.Timestamptz(6)
   endAt       DateTime    @updatedAt @map("end_at") @db.Timestamptz(6)
   status      EventStatus
   type        EventType
+  content     String      @db.Text
 
-  forum   Forum?        @relation(fields: [forumId], references: [id], onDelete: Cascade)
-  faculty Faculty?      @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  users   UserToEvent[]
+  forum     Forum?          @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  users     UserToEvent[]
+  comments  EventComment[]
+  documents EventDocument[]
 
   @@map("event")
 }
@@ -442,4 +443,34 @@ model UserToEvent {
 
   @@id([userId, eventId], map: "pk_user_to_event")
   @@map("user_to_event")
+}
+
+model EventComment {
+  id        String   @id(map: "pk_event_comment") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String   @default(dbgenerated("uuid_generate_v4()")) @map("user_id") @db.Uuid
+  eventId   String   @default(dbgenerated("uuid_generate_v4()")) @map("event_id") @db.Uuid
+  content   String   @db.Text
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_comment")
+}
+
+model EventDocument {
+  id        String   @id(map: "pk_event_document") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String   @map("user_id") @db.Uuid
+  eventId   String   @map("event_id") @db.Uuid
+  fileUrl   String   @map("file_url")
+  fileName  String   @map("file_name")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([fileUrl], map: "ixuq_event_file_url")
+  @@map("event_document")
 }
