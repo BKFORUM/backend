@@ -76,7 +76,7 @@ export class ForumService {
     };
 
     let orderBy: Prisma.ForumOrderByWithRelationInput = getOrderBy<Forum>({
-      defaultValue: 'createdAt',
+      defaultValue: 'updatedAt',
       order,
       mappedOrder: mappedOrderType,
     });
@@ -558,14 +558,10 @@ export class ForumService {
       });
     }
 
-    let orderBy: Prisma.ForumOrderByWithRelationInput = {};
-
-    if (order) {
-      orderBy = getOrderBy<Forum>({
-        defaultValue: 'createdAt',
-        order,
-      });
-    }
+    let orderBy: Prisma.ForumOrderByWithRelationInput = getOrderBy<Forum>({
+      defaultValue: 'updatedAt',
+      order,
+    });
 
     const [total, posts] = await Promise.all([
       this.dbContext.post.count({

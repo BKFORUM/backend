@@ -242,11 +242,7 @@ export class UserService {
       }
     }
 
-    let orderBy;
-
-    if (order) {
-      orderBy = getOrderBy<User>({ defaultValue: 'createdAt', order });
-    }
+    let orderBy = getOrderBy<User>({ defaultValue: 'updatedAt', order });
 
     const [users, total] = await Promise.all([
       this.dbContext.user.findMany({
