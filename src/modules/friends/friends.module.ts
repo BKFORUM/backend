@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
-import { FriendsService } from './friends.service';
-import { FriendsController } from './friends.controller';
 import { DatabaseModule } from '@db';
+import { NotificationModule } from '@modules/notification';
+import { Module } from '@nestjs/common';
+import { FriendsController } from './friends.controller';
+import { FriendsService } from './friends.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, NotificationModule],
   controllers: [FriendsController],
   providers: [FriendsService],
 })

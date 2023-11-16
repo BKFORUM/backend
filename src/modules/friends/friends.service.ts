@@ -1,13 +1,18 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { RequestUser } from '@common/types';
+import { NotificationService } from '@modules/notification';
 import { selectUser } from '@modules/user/utils';
 import { ConversationType, ResourceStatus } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
+import { MessageEvent } from 'src/gateway/enum';
 
 @Injectable()
 export class FriendsService {
-  constructor(private readonly dbContext: PrismaService) {}
+  constructor(
+    private readonly dbContext: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
   async sendFriendRequests({ id: senderId }: RequestUser, receiverId: string) {
     const existedFriendship = await this.dbContext.friendship.findFirst({
       where: {
@@ -34,6 +39,47 @@ export class FriendsService {
         receiverId,
         status: ResourceStatus.PENDING,
       },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
+        receiver: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
+      },
+    });
+
+    await this.notificationService.notifyNotification(request.sender, request.receiverId, MessageEvent.REQUEST_FRIEND_CREATED, {
+      content: `đã gửi lời mời kết bạn cho bạn`,
+      modelId: 'cb5c4e15-c785-4b32-874d-fac3766adb5b',
+      modelName: 'friendship',
+      receiverId: request.receiverId
     });
 
     return request;
