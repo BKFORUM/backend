@@ -255,7 +255,7 @@ export class ForumService {
     });
   }
 
-  async getForumById(id: string) {
+  async getForumById(id: string, user: RequestUser) {
     const forum = await this.dbContext.forum.findUniqueOrThrow({
       where: { id },
       select: {
@@ -300,7 +300,22 @@ export class ForumService {
       },
     });
 
-    return forum;
+    const userStatusInForum = await this.dbContext.userToForum.findUnique({
+      where: {
+        userId_forumId: {
+          forumId: id,
+          userId: user.id,
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    return {
+      ...forum,
+      yourStatus: userStatusInForum?.status ?? 'NOT_MEMBER',
+    };
   }
 
   async updateForum(
@@ -727,7 +742,10 @@ export class ForumService {
       select: {
         modId: true,
         conversation: {
-          select: { id: true },
+          select: {
+            id: true,
+            users: true,
+          },
         },
         users: true,
         name: true,
@@ -778,6 +796,8 @@ export class ForumService {
       throw new BadRequestException('The request is invalid');
     }
 
+    console.log(forum.conversation);
+
     if (status === ResourceStatus.DELETED) {
       await this.dbContext.$transaction(async (trx) => {
         await Promise.all([
@@ -789,7 +809,10 @@ export class ForumService {
               },
             },
           }),
-          forum.conversation
+          forum.conversation &&
+          forum.conversation.users.some(
+            ({ userId: forumUser }) => forumUser === userId,
+          )
             ? trx.userToConversation.delete({
                 where: {
                   conversationId_userId: {
