@@ -683,7 +683,7 @@ export class ForumService {
       forum.modId,
       MessageEvent.REQUEST_FORUM_CREATED,
       {
-        content: `${user.fullName} đã yêu cầu vào forum của bạn`,
+        content: `đã yêu cầu vào forum của bạn`,
         modelId: forum.id,
         modelName: 'forum',
         receiverId: forum.modId,
@@ -845,7 +845,7 @@ export class ForumService {
       userId,
       MessageEvent.REQUEST_FORUM_APPROVED,
       {
-        content: `${user.fullName} đã chấp nhận yêu cầu vào forum của bạn`,
+        content: `đã chấp nhận yêu cầu vào forum của bạn`,
         modelId: forumId,
         modelName: 'forum',
         receiverId: forum.modId,

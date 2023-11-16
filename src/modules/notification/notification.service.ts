@@ -4,6 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from 'src/database/services';
 import { GetNotificationDto } from './dto';
 import { NotificationResponse } from './interfaces/notification-response.interface';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
@@ -67,6 +68,9 @@ export class NotificationService {
         where: { userId },
         skip: dto.skip,
         take: dto.take,
+        orderBy: {
+          createdAt: Prisma.SortOrder.desc,
+        }
       }),
       this.dbContext.notification.count({ where: { userId } }),
       this.dbContext.notification.count({ where: { userId, readAt: null } }),

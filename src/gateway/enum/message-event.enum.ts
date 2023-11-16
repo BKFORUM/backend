@@ -7,4 +7,6 @@ export enum MessageEvent {
   LIKE_CREATED = 'like.created',
   REQUEST_FORUM_CREATED = 'request_forum.created',
   REQUEST_FORUM_APPROVED = 'request_forum.approved',
+  REQUEST_POST_CREATED = 'request_post.created',
+  REQUEST_POST_APPROVED = 'request_post.approved'
 }
