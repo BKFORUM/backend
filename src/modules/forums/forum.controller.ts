@@ -98,8 +98,11 @@ export class ForumController {
   })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  getForumById(@Param() { id }: UUIDParam): Promise<GetForumResponse> {
-    return this.forumService.getForumById(id);
+  getForumById(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+  ): Promise<GetForumResponse> {
+    return this.forumService.getForumById(id, user);
   }
 
   @ApiOperation({
