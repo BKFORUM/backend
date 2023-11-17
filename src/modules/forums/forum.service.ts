@@ -848,7 +848,7 @@ export class ForumService {
         content: `đã chấp nhận yêu cầu vào forum của bạn`,
         modelId: forumId,
         modelName: 'forum',
-        receiverId: forum.modId,
+        receiverId: userId,
       },
     );
 
