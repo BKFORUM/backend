@@ -75,12 +75,17 @@ export class FriendsService {
       },
     });
 
-    await this.notificationService.notifyNotification(request.sender, request.receiverId, MessageEvent.REQUEST_FRIEND_CREATED, {
-      content: `đã gửi lời mời kết bạn cho bạn`,
-      modelId: 'cb5c4e15-c785-4b32-874d-fac3766adb5b',
-      modelName: 'friendship',
-      receiverId: request.receiverId
-    });
+    await this.notificationService.notifyNotification(
+      request.sender,
+      request.receiverId,
+      MessageEvent.REQUEST_FRIEND_CREATED,
+      {
+        content: `đã gửi lời mời kết bạn cho bạn`,
+        modelId: 'cb5c4e15-c785-4b32-874d-fac3766adb5b',
+        modelName: 'friendship',
+        receiverId: request.receiverId,
+      },
+    );
 
     return request;
   }
@@ -117,6 +122,40 @@ export class FriendsService {
             receiverId: senderId,
           },
         ],
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
+        receiver: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          }
+        }
       },
     });
 
@@ -171,6 +210,13 @@ export class FriendsService {
             })
           : undefined,
       ]);
+    });
+
+    await this.notificationService.notifyNotification(friendship.receiver, senderId, MessageEvent.REQUEST_FRIEND_APPROVED, {
+      content: `đã chấp nhận lời mời kết bạn của bạn`,
+      modelId: 'a9b2e49d-afcb-4e2a-9ef4-8281172a4502',
+      modelName: 'friendship',
+      receiverId: senderId
     });
   }
 

@@ -10,4 +10,5 @@ export enum MessageEvent {
   REQUEST_POST_CREATED = 'request_post.created',
   REQUEST_POST_APPROVED = 'request_post.approved',
   REQUEST_FRIEND_CREATED = 'request_friend.created',
+  REQUEST_FRIEND_APPROVED = 'request_friend.approved',
 }

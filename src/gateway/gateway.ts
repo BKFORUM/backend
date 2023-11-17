@@ -214,4 +214,15 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
       })
     }
   }
+
+  @OnEvent(MessageEvent.REQUEST_FRIEND_APPROVED)
+  handleFriendRequestApproved(payload, userId: string) {
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
+
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onFriendRequestApproved', payload);
+      })
+    }
+  }
 }
