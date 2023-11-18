@@ -20,6 +20,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from '@modules/user';
 import { MessageEvent } from 'src/gateway/enum';
 import { omit } from 'lodash';
+import { ConversationUserRequestBody } from './dto/conversation-user.dto';
 
 @Injectable()
 export class ConversationService {
@@ -239,7 +240,111 @@ export class ConversationService {
     return mappedMessage;
   }
 
-  async getMemberOfConversations(id: string) {}
+  async getMemberOfConversations(id: string) {
+    const conversation = await this.dbContext.conversation.findUniqueOrThrow({
+      where: {
+        id,
+      },
+    });
+    const members = await this.dbContext.userToConversation.findMany({
+      where: {
+        conversationId: id,
+      },
+      select: {
+        userId: true,
+        displayName: true,
+        user: selectUser,
+      },
+    });
+
+    return members;
+  }
+
+  async updateUserInfo(
+    conversationId: string,
+    userId: string,
+    user: RequestUser,
+    body: ConversationUserRequestBody,
+  ) {
+    const { displayName } = body;
+
+    const conversation =
+      await this.dbContext.userToConversation.findUniqueOrThrow({
+        where: {
+          conversationId_userId: {
+            userId,
+            conversationId,
+          },
+        },
+        select: {
+          conversation: {
+            include: {
+              users: true,
+            },
+          },
+        },
+      });
+
+    const userInConversation = conversation.conversation.users.some(
+      ({ userId: conversationUserId }) => conversationUserId === user.id,
+    );
+
+    if (!userInConversation) {
+      throw new BadRequestException('You are not in this conversation');
+    }
+
+    await this.dbContext.userToConversation.update({
+      where: {
+        conversationId_userId: {
+          conversationId,
+          userId,
+        },
+      },
+      data: {
+        displayName: displayName ?? null,
+      },
+    });
+  }
+
+  async deleteMemberOfConversation(
+    userId: string,
+    conversationId: string,
+    user: RequestUser,
+  ) {
+    const conversation =
+      await this.dbContext.userToConversation.findUniqueOrThrow({
+        where: {
+          conversationId_userId: {
+            userId,
+            conversationId,
+          },
+        },
+        select: {
+          conversation: {
+            include: {
+              users: true,
+            },
+          },
+        },
+      });
+
+    if (
+      conversation.conversation.type === ConversationType.CHAT ||
+      conversation.conversation.forumId !== null
+    ) {
+      throw new BadRequestException(
+        'You cannot delete user of this type of conversation',
+      );
+    }
+
+    const userInConversation = conversation.conversation.users.some(
+      ({ userId: conversationUserId }) => conversationUserId === user.id,
+    );
+
+    if (!userInConversation) {
+      throw new BadRequestException('You are not in this conversation');
+    }
+  }
 
   async getAllMessagesOfConversation(
     id: string,
