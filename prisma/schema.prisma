@@ -93,6 +93,7 @@ model User {
   events            UserToEvent[]
   eventComments     EventComment[]
   eventDocuments    EventDocument[]
+  replyComments     ReplyComment[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -268,6 +269,7 @@ model Comment {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
+  replyComments ReplyComment[]
   @@map("comment")
 }
 
@@ -473,4 +475,18 @@ model EventDocument {
 
   @@unique([fileUrl], map: "ixuq_event_file_url")
   @@map("event_document")
+}
+
+model ReplyComment {
+  id          String   @id(map: "pk_reply_comment") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content     String   @db.Text
+  userId      String   @map("user_id") @db.Uuid
+  commentId   String   @map("comment_id") @db.Uuid    
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  user        User      @relation(fields: [userId], references: [id])
+  comment     Comment   @relation(fields: [commentId], references: [id])
+
+  @@map("reply_comment")
 }
