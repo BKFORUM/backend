@@ -398,6 +398,15 @@ export class ConversationService {
     if (!userInConversation) {
       throw new BadRequestException('You are not in this conversation');
     }
+
+    await this.dbContext.userToConversation.delete({
+      where: {
+        conversationId_userId: {
+          userId,
+          conversationId,
+        },
+      },
+    });
   }
 
   async getAllMessagesOfConversation(
