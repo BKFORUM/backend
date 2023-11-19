@@ -345,7 +345,7 @@ export class ForumService {
       this.updateTopics(forumId, topicForumIds, dto.topicIds),
       this.updateName(forumId, dto.name),
       this.updateType(forumId, dto.type),
-      this.updateStatus(forumId, forum, dto.status),
+      this.updateStatus(user, forumId, forum, dto.status),
       this.updateAvatar(forumId, dto.avatarUrl),
     ]);
   }
@@ -435,6 +435,7 @@ export class ForumService {
   }
 
   async updateStatus(
+    reqUser: RequestUser,
     forumId: string,
     forum: Forum & { users: UserToForum[] },
     status?: ResourceStatus,
@@ -462,6 +463,32 @@ export class ForumService {
           },
         },
       });
+
+      if (status === ResourceStatus.ACTIVE) {
+        const user = await this.dbContext.user.findUniqueOrThrow({
+          where: { id: reqUser.id },
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        });
+        await this.notificationService.notifyNotification(user, forum.modId, MessageEvent.FORUM_APPROVED, {
+          content: 'đã duyệt yêu cầu forum của bạn',
+          modelId: forum.id,
+          modelName: 'forum',
+          receiverId: forum.modId
+        });
+      }
     }
   }
 
