@@ -257,7 +257,61 @@ export class ConversationService {
       },
     });
 
-    return members;
+    return members.map((member) => ({
+      ...member,
+      displayName: getAuthorDisplayName(member),
+    }));
+  }
+
+  async addUserToConversation(
+    user: RequestUser,
+    userIds: string[],
+    conversationId: string,
+  ) {
+    const conversation = await this.dbContext.conversation.findUniqueOrThrow({
+      where: { id: conversationId },
+      select: {
+        users: true,
+      },
+    });
+
+    const userInConversation = conversation.users.some(
+      ({ userId: conversationUserId }) => conversationUserId === user.id,
+    );
+
+    if (!userInConversation) {
+      throw new BadRequestException('You are not in this conversation');
+    }
+
+    const users = await this.userService.validateUserIds(userIds);
+
+    const userToConversation = await this.dbContext.userToConversation.findMany(
+      {
+        where: {
+          conversationId,
+          AND: {
+            userId: {
+              in: userIds,
+            },
+          },
+        },
+      },
+    );
+
+    if (userToConversation.length > 0) {
+      throw new BadRequestException(`One of the user is already in the forum`);
+    }
+
+    const data = userIds.map((userId) => {
+      return {
+        conversationId,
+        userId,
+      };
+    });
+
+    await this.dbContext.userToConversation.createMany({
+      data,
+    });
   }
 
   async updateUserInfo(

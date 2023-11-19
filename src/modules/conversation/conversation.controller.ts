@@ -31,6 +31,7 @@ import {
   ConversationUserRequestBody,
   ConversationUserRequestParam,
 } from './dto/conversation-user.dto';
+import { AddUsersToConversationDto } from './dto/add-user-to-conversation.dto';
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard)
 @ApiTags('Conversation')
@@ -114,6 +115,18 @@ export class ConversationController {
       conversationId,
       user,
     );
+  }
+
+  @ApiOperation({
+    description: 'Add user to conversation',
+  })
+  @Post(':id/users')
+  addUsersToConversation(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+    @Body() { userIds }: AddUsersToConversationDto,
+  ) {
+    return this.conversationService.addUserToConversation(user, userIds, id);
   }
 
   @ApiOperation({
