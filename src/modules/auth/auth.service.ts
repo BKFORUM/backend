@@ -2,7 +2,7 @@ import { MailService } from '@modules/mail/mail.service';
 import {
   BadRequestException,
   ForbiddenException,
-  Injectable
+  Injectable,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -93,6 +93,7 @@ export class AuthService {
       email: userData.email,
       fullName: userData.fullName,
       roles: userData.roles.map((role) => role.role.name),
+      avatarUrl: userData.avatarUrl,
     };
 
     const [accessToken, refreshToken] = await Promise.all([

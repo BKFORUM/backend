@@ -138,6 +138,7 @@ export class UserService {
         password: true,
         refreshToken: true,
         fullName: true,
+        avatarUrl: true,
         roles: {
           select: {
             role: {
@@ -162,6 +163,7 @@ export class UserService {
         password: true,
         refreshToken: true,
         fullName: true,
+        avatarUrl: true,
         roles: {
           select: {
             role: {

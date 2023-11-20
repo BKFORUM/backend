@@ -1,6 +1,9 @@
 import { AuthenticatedSocket, UUIDParam } from '@common/types';
 import { AuthService } from '@modules/auth';
-import { GetConversationPayload, GetMessageResponse } from '@modules/conversation/interface/get-conversation.payload';
+import {
+  GetConversationPayload,
+  GetMessageResponse,
+} from '@modules/conversation/interface/get-conversation.payload';
 import { MessageService } from '@modules/message/message.service';
 import { UserResponse } from '@modules/user/interfaces';
 import {
@@ -21,13 +24,14 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Like, Notification } from '@prisma/client';
-import { isEmpty } from 'lodash';
+import { isEmpty, omit } from 'lodash';
 import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
 import { WSAuthMiddleware } from 'src/middleware';
 import { MessageEvent } from './enum';
 import { GatewaySessionManager } from './gateway.session';
+import { FriendsService } from '@modules/friends';
 
 @WebSocketGateway({
   cors: {
@@ -49,12 +53,41 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly messageService: MessageService,
     private readonly sessions: GatewaySessionManager,
     private readonly authService: AuthService,
+    private readonly friendService: FriendsService,
   ) {}
-  handleConnection(client: AuthenticatedSocket) {
+  async handleConnection(client: AuthenticatedSocket) {
+    const friends = await this.friendService.getFriendList(client.user);
+    if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
+      friends.forEach((friend) => {
+        const sockets = this.sessions.getSocketsByUserId(friend.id);
+        if (sockets.length > 0) {
+          sockets.forEach((socket) => {
+            socket.emit(
+              'onFriendOnline',
+              omit(client.user, 'roles', 'iat', 'exp'),
+            );
+          });
+        }
+      });
+    }
     this.sessions.setUserSocket(this.getSessionId(client), client);
   }
-  handleDisconnect(client: AuthenticatedSocket) {
+  async handleDisconnect(client: AuthenticatedSocket) {
     this.sessions.removeUserSocket(this.getSessionId(client));
+    const friends = await this.friendService.getFriendList(client.user);
+    if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
+      friends.forEach((friend) => {
+        const sockets = this.sessions.getSocketsByUserId(friend.id);
+        if (sockets.length > 0) {
+          sockets.forEach((socket) => {
+            socket.emit(
+              'onFriendOffline',
+              omit(client.user, 'roles', 'iat', 'exp'),
+            );
+          });
+        }
+      });
+    }
   }
 
   getSessionId({ user }: AuthenticatedSocket) {
@@ -72,6 +105,19 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('onMessage')
   async handleMessage(@ConnectedSocket() client: AuthenticatedSocket) {
     console.log(client.user);
+  }
+
+  @SubscribeMessage('onGetOnlineFriends')
+  async handleGetOnlineFriends(@ConnectedSocket() client: AuthenticatedSocket) {
+    const friends = await this.friendService.getFriendList(client.user);
+    const onlineFriends = [];
+    friends.forEach((friend) => {
+      const sockets = this.sessions.getSocketsByUserId(friend.id);
+      if (sockets.length > 0) {
+        onlineFriends.push(friend);
+      }
+    });
+    client.emit('onGetOnlineFriends', friends);
   }
 
   @SubscribeMessage('onConversationJoin')
@@ -145,7 +191,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onCommentCreated', payload);
-      })
+      });
     }
   }
 
@@ -156,7 +202,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onLikeCreated', payload);
-      })
+      });
     }
   }
 
@@ -167,7 +213,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onRequestForumCreated', payload);
-      })
+      });
     }
   }
 
@@ -178,7 +224,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onRequestForumApproved', payload);
-      })
+      });
     }
   }
 
@@ -189,7 +235,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onPostRequestCreated', payload);
-      })
+      });
     }
   }
 
@@ -200,7 +246,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onPostRequestApproved', payload);
-      })
+      });
     }
   }
 
@@ -211,7 +257,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onFriendRequestCreated', payload);
-      })
+      });
     }
   }
 
@@ -222,7 +268,24 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onFriendRequestApproved', payload);
-      })
+      });
+    }
+  }
+
+  @OnEvent(MessageEvent.FRIENDSHIP_CREATED)
+  handleCreateFriendShip(payload) {
+    console.log(payload);
+    const { sender, receiver } = payload;
+    console.log(sender, receiver);
+    const senderSockets = this.sessions.getSocketsByUserId(sender.id);
+    const receiverSockets = this.sessions.getSocketsByUserId(receiver.id);
+    if (!isEmpty(senderSockets) && !isEmpty(receiverSockets)) {
+      senderSockets.forEach((socket) => {
+        socket.emit('onFriendOnline', receiver);
+      });
+      receiverSockets.forEach((socket) => {
+        socket.emit('onFriendOnline', sender);
+      });
     }
   }
 
@@ -233,7 +296,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onReplyCommentCreated', payload);
-      })
+      });
     }
   }
 
@@ -244,7 +307,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!isEmpty(authorSockets)) {
       authorSockets.forEach((socket) => {
         socket.emit('onForumApproved', payload);
-      })
+      });
     }
   }
 }

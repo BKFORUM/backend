@@ -13,4 +13,5 @@ export enum MessageEvent {
   REQUEST_FRIEND_APPROVED = 'request_friend.approved',
   REPLY_COMMENT_CREATED = 'reply_comment.created',
   FORUM_APPROVED = 'forum.approved',
+  FRIENDSHIP_CREATED = 'friendship.created',
 }

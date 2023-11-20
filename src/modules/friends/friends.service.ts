@@ -6,12 +6,14 @@ import { selectUser } from '@modules/user/utils';
 import { ConversationType, ResourceStatus } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
 import { MessageEvent } from 'src/gateway/enum';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class FriendsService {
   constructor(
     private readonly dbContext: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly event: EventEmitter2,
   ) {}
   async sendFriendRequests({ id: senderId }: RequestUser, receiverId: string) {
     const existedFriendship = await this.dbContext.friendship.findFirst({
@@ -154,8 +156,8 @@ export class FriendsService {
             avatarUrl: true,
             type: true,
             facultyId: true,
-          }
-        }
+          },
+        },
       },
     });
 
@@ -212,12 +214,19 @@ export class FriendsService {
       ]);
     });
 
-    await this.notificationService.notifyNotification(friendship.receiver, senderId, MessageEvent.REQUEST_FRIEND_APPROVED, {
-      content: `đã chấp nhận lời mời kết bạn của bạn`,
-      modelId: 'a9b2e49d-afcb-4e2a-9ef4-8281172a4502',
-      modelName: 'friendship',
-      receiverId: senderId
-    });
+    this.event.emit(MessageEvent.FRIENDSHIP_CREATED, friendship);
+
+    await this.notificationService.notifyNotification(
+      friendship.receiver,
+      senderId,
+      MessageEvent.REQUEST_FRIEND_APPROVED,
+      {
+        content: `đã chấp nhận lời mời kết bạn của bạn`,
+        modelId: 'a9b2e49d-afcb-4e2a-9ef4-8281172a4502',
+        modelName: 'friendship',
+        receiverId: senderId,
+      },
+    );
   }
 
   async getFriendList(user: RequestUser) {
