@@ -60,7 +60,13 @@ export class ConversationService {
         users: createUsers,
       },
       include: {
-        users: true,
+        users: {
+          select: {
+            userId: true,
+            displayName: true,
+            user: selectUser,
+          },
+        },
       },
     });
 
