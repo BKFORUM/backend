@@ -543,8 +543,8 @@ export class PostService {
         where: {
           postId,
         },
-        skip: dto.skipComment,
-        take: dto.takeComment,
+        skip: dto.skip,
+        take: dto.take,
         include: {
           user: {
             select: {
@@ -556,27 +556,6 @@ export class PostService {
               dateOfBirth: true,
               email: true,
               gender: true,
-            },
-          },
-          replyComments: {
-            skip: dto.skipReplyComment,
-            take: dto.takeReplyComment,
-            orderBy: {
-              createdAt: Prisma.SortOrder.desc,
-            },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  fullName: true,
-                  phoneNumber: true,
-                  address: true,
-                  avatarUrl: true,
-                  dateOfBirth: true,
-                  email: true,
-                  gender: true,
-                },
-              },
             },
           },
           _count: {

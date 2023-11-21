@@ -2,10 +2,10 @@ import { RequestUser } from '@common/types';
 import { NotificationService } from '@modules/notification';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
-import { CreateCommentDto } from './dto';
+import { CreateCommentDto, GetCommentDto } from './dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { MessageEvent } from 'src/gateway/enum';
-import { ReplyComment } from '@prisma/client';
+import { Prisma, ReplyComment } from '@prisma/client';
 
 @Injectable()
 export class CommentService {
@@ -20,6 +20,57 @@ export class CommentService {
 
   async deleteComment(id: string, userId: string): Promise<void> {
     await this.dbContext.comment.delete({ where: { id, userId } });
+  }
+
+  async getReplyComments(
+    commentId: string,
+    dto: GetCommentDto,
+    user: RequestUser,
+  ): Promise<ReplyComment[]> {
+    const comment = await this.dbContext.comment.findUniqueOrThrow({
+      where: { id: commentId },
+      include: { post: true },
+    });
+    // const isInForum = await this.dbContext.user.findUnique({
+    //   where: {
+    //     id: user.id,
+    //     forums: {
+    //       some: {
+    //         id: comment.post.forumId,
+    //       },
+    //     },
+    //   },
+    //   include: { forums: true },
+    // });
+
+    // if (!isInForum) {
+    //   throw new BadRequestException('The user is not in the forum');
+    // }
+
+    const replyComments = await this.dbContext.replyComment.findMany({
+      where: { commentId },
+      skip: dto.skip,
+      take: dto.take,
+      orderBy: {
+        createdAt: Prisma.SortOrder.desc,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            dateOfBirth: true,
+            email: true,
+            gender: true,
+          },
+        },
+      },
+    });
+
+    return replyComments;
   }
 
   async replyComment(
