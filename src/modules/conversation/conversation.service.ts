@@ -117,16 +117,9 @@ export class ConversationService {
             },
           },
         },
-        orderBy: [
-          {
-            lastMessage: {
-              createdAt: Prisma.SortOrder.desc,
-            },
-          },
-          {
-            createdAt: Prisma.SortOrder.desc,
-          },
-        ],
+        orderBy: {
+          updatedAt: Prisma.SortOrder.desc,
+        },
       }),
       this.dbContext.conversation.count({
         where: {
