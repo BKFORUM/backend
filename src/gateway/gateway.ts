@@ -117,7 +117,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
         onlineFriends.push(friend);
       }
     });
-    client.emit('onGetOnlineFriends', friends);
+    client.emit('onGetOnlineFriends', onlineFriends);
   }
 
   @SubscribeMessage('onConversationJoin')

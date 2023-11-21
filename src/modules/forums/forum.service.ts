@@ -482,12 +482,17 @@ export class ForumService {
             facultyId: true,
           },
         });
-        await this.notificationService.notifyNotification(user, forum.modId, MessageEvent.FORUM_APPROVED, {
-          content: 'đã duyệt yêu cầu forum của bạn',
-          modelId: forum.id,
-          modelName: 'forum',
-          receiverId: forum.modId
-        });
+        await this.notificationService.notifyNotification(
+          user,
+          forum.modId,
+          MessageEvent.FORUM_APPROVED,
+          {
+            content: 'đã duyệt yêu cầu forum của bạn',
+            modelId: forum.id,
+            modelName: 'forum',
+            receiverId: forum.modId,
+          },
+        );
       }
     }
   }
