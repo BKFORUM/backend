@@ -32,21 +32,21 @@ export class CommentService {
       include: { post: true },
     });
 
-    const isInForum = await this.dbContext.user.findUnique({
-      where: {
-        id: reqUser.id,
-        forums: {
-          some: {
-            id: comment.post.forumId,
-          },
-        },
-      },
-      include: { forums: true },
-    });
+    // const isInForum = await this.dbContext.user.findUnique({
+    //   where: {
+    //     id: reqUser.id,
+    //     forums: {
+    //       some: {
+    //         id: comment.post.forumId,
+    //       },
+    //     },
+    //   },
+    //   include: { forums: true },
+    // });
 
-    if (!isInForum) {
-      throw new BadRequestException('The user is not in the forum');
-    }
+    // if (!isInForum) {
+    //   throw new BadRequestException('The user is not in the forum');
+    // }
 
     const replyComment = await this.dbContext.replyComment.create({
       data: {
