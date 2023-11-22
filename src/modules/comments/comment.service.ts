@@ -52,7 +52,7 @@ export class CommentService {
       skip: dto.skip,
       take: dto.take,
       orderBy: {
-        createdAt: Prisma.SortOrder.desc,
+        createdAt: Prisma.SortOrder.asc,
       },
       include: {
         user: {
