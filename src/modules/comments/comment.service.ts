@@ -1,11 +1,11 @@
 import { RequestUser } from '@common/types';
 import { NotificationService } from '@modules/notification';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Prisma, ReplyComment } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
+import { MessageEvent } from 'src/gateway/enum';
 import { CreateCommentDto, GetCommentDto } from './dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { MessageEvent } from 'src/gateway/enum';
-import { Prisma, ReplyComment } from '@prisma/client';
 
 @Injectable()
 export class CommentService {
@@ -125,17 +125,19 @@ export class CommentService {
       },
     });
 
-    await this.notificationService.notifyNotification(
-      replyComment.user,
-      comment.userId,
-      MessageEvent.REPLY_COMMENT_CREATED,
-      {
-        content: 'đã trả lời bình luận của bạn',
-        modelId: comment.postId,
-        modelName: 'post',
-        receiverId: comment.userId,
-      },
-    );
+    if (replyComment.userId !== comment.userId) {
+      await this.notificationService.notifyNotification(
+        replyComment.user,
+        comment.userId,
+        MessageEvent.REPLY_COMMENT_CREATED,
+        {
+          content: 'đã trả lời bình luận của bạn',
+          modelId: comment.postId,
+          modelName: 'post',
+          receiverId: comment.userId,
+        },
+      );
+    }
 
     return replyComment;
   }
