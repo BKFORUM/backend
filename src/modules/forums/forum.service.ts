@@ -452,6 +452,7 @@ export class ForumService {
             create: {
               displayName: forum.name,
               avatarUrl: forum.avatarUrl,
+              type: ConversationType.GROUP_CHAT,
               users: {
                 createMany: {
                   data: forumActiveUsers.map(({ userId }) => ({
