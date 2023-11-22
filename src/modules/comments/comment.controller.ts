@@ -4,11 +4,13 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,7 +22,7 @@ import {
 import { ReplyComment } from '@prisma/client';
 import { AccessTokenGuard } from 'src/guard';
 import { CommentService } from './comment.service';
-import { CreateCommentDto, ReplyCommentParam, UpdateCommentDto } from './dto';
+import { CreateCommentDto, GetCommentDto, ReplyCommentParam, UpdateCommentDto } from './dto';
 
 @ApiBearerAuth()
 @Controller({
@@ -59,6 +61,23 @@ export class CommentController {
     @ReqUser('id') userId: string,
   ): Promise<void> {
     return this.commentService.deleteComment(id, userId);
+  }
+
+  @ApiOperation({
+    description: 'Get reply comments',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get(':id/replies')
+  getReplyComments(
+    @Param() { id }: UUIDParam,
+    @Query() dto: GetCommentDto,
+    @ReqUser() user: RequestUser,
+  ): Promise<ReplyComment[]> {
+    return this.commentService.getReplyComments(id, dto, user);
   }
 
   @ApiOperation({
