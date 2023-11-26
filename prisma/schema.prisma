@@ -420,8 +420,9 @@ model Event {
   updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   forumId     String?     @map("forum_id") @db.Uuid
   displayName String      @map("display_name") @db.VarChar(128)
+  location    String      @map("location")  @db.VarChar(128)
   startAt     DateTime    @map("start_at") @db.Timestamptz(6)
-  endAt       DateTime    @updatedAt @map("end_at") @db.Timestamptz(6)
+  endAt       DateTime    @map("end_at") @db.Timestamptz(6)
   status      EventStatus
   type        EventType
   content     String      @db.Text

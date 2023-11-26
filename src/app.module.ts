@@ -19,6 +19,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationModule } from '@modules/notification';
 import { GatewayModule } from './gateway/gateway.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventModule } from '@modules/event';
 
 @Module({
   providers: [
@@ -35,6 +36,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ScheduleModule.forRoot(),
     GatewayModule,
     CloudinaryModule,
+    EventModule,
     AuthModule,
     UserModule,
     RoleModule,
