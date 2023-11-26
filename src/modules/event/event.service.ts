@@ -193,6 +193,14 @@ export class EventService {
         where: {
           AND: andWhereConditions,
         },
+        include: {
+          _count: {
+            select: {
+              comments: true,
+              users: true,
+            },
+          },
+        },
         skip,
         take,
         orderBy: getOrderBy({ order, defaultValue: 'createdAt' }),
