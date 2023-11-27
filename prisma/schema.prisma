@@ -77,6 +77,7 @@ model User {
   facultyId    String   @map("faculty_id") @db.Uuid
 
   faculty           Faculty              @relation(fields: [facultyId], references: [id], map: "fk_user_faculty")
+  events            Event[]
   roles             UserToRole[]
   forums            Forum[]
   userToForum       UserToForum[]
@@ -90,7 +91,7 @@ model User {
   conversations     UserToConversation[]
   notifications     Notification[]       @relation("receiver_notifications")
   sentNotifications Notification[]       @relation("sender_notifications")
-  events            UserToEvent[]
+  userToEvent    UserToEvent[]
   eventComments     EventComment[]
   eventDocuments    EventDocument[]
   replyComments     ReplyComment[]
@@ -419,6 +420,7 @@ model Event {
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   forumId     String?     @map("forum_id") @db.Uuid
+  userId      String?     @map("user_id") @db.Uuid
   displayName String      @map("display_name") @db.VarChar(128)
   location    String      @map("location")  @db.VarChar(128)
   startAt     DateTime    @map("start_at") @db.Timestamptz(6)
@@ -428,6 +430,7 @@ model Event {
   content     String      @db.Text
 
   forum     Forum?          @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
   users     UserToEvent[]
   comments  EventComment[]
   documents EventDocument[]

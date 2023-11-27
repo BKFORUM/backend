@@ -1,23 +1,37 @@
-import {
-  Controller,
-  UseGuards,
-  Post,
-  Body,
-  Query,
-  Get,
-  Delete,
-  Param,
-  Patch,
-  Put,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AccessTokenGuard } from 'src/guard';
-import { CreateEventDto } from './dto/create-event.dto';
 import { ReqUser } from '@common/decorator/request-user.decorator';
 import { RequestUser, UUIDParam } from '@common/types';
-import { EventService } from './event.service';
+import {
+  CreateCommentDto,
+  GetCommentDto,
+  UpdateCommentDto,
+} from '@modules/comments/dto';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiProperty,
+  ApiTags,
+} from '@nestjs/swagger';
+import { AccessTokenGuard } from 'src/guard';
+import { CreateEventDto } from './dto/create-event.dto';
 import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
+import { UpdateEventParam } from './dto/update-event.dto';
+import { EventService } from './event.service';
 
 @Controller({
   path: 'events',
@@ -101,5 +115,61 @@ export class EventController {
     @Param() { id }: UUIDParam,
   ) {
     return this.eventService.getSubscribers(id, query);
+  }
+
+  @ApiProperty({
+    description: 'Create a comment in a event',
+  })
+  @Post(':id/event-comments')
+  @HttpCode(HttpStatus.CREATED)
+  createComment(
+    @Param() { id }: UUIDParam,
+    @Body() dto: CreateCommentDto,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.eventService.createEventComment(id, user, dto);
+  }
+
+  @ApiProperty({
+    description: 'Get comments in a event',
+  })
+  @Get(':id/event-comments')
+  @HttpCode(HttpStatus.OK)
+  getComments(@Param() { id }: UUIDParam, @Query() dto: GetCommentDto) {
+    return this.eventService.getEventComments(id, dto);
+  }
+
+  @ApiOperation({
+    description: 'Update a event comment',
+  })
+  @Put(':id/event-comments/:eventCommentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  updateComment(
+    @Param() { id, eventCommentId }: UpdateEventParam,
+    @ReqUser('id') userId: string,
+    @Body() dto: UpdateCommentDto,
+  ) {
+    return this.eventService.updateEventComment(
+      id,
+      userId,
+      eventCommentId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    description: 'Delete a event comment',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id/event-comments/:eventCommentId')
+  deleteForum(
+    @Param() { id, eventCommentId }: UpdateEventParam,
+    @ReqUser('id') userId: string,
+  ) {
+    return this.eventService.deleteEventComment(id, userId, eventCommentId);
   }
 }
