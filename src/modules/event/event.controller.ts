@@ -18,6 +18,7 @@ import { RequestUser, UUIDParam } from '@common/types';
 import { EventService } from './event.service';
 import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @Controller({
   path: 'events',
@@ -43,8 +44,10 @@ export class EventController {
   async updateEvent(
     @Param() { id }: UUIDParam,
     @ReqUser() user: RequestUser,
-    @Body() body: CreateEventDto,
-  ) {}
+    @Body() body: UpdateEventDto,
+  ) {
+    return this.eventService.updateEvent(id, user, body);
+  }
 
   @ApiOperation({
     description: 'Delete an event by id',

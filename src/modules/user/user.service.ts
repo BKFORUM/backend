@@ -203,6 +203,8 @@ export class UserService {
           select: {
             id: true,
             type: true,
+            avatarUrl: true,
+            modId: true,
             name: true,
           },
         },
