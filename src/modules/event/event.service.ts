@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from 'src/database/services';
 import { CreateEventDto } from './dto/create-event.dto';
 import { RequestUser, UserRole } from '@common/types';
@@ -8,6 +12,8 @@ import { toLocalTime, toUtcTime } from '@common/decorator/date.decorator';
 import { GetEventDto } from './dto/get-events.dto';
 import { getOrderBy, searchByMode } from '@common/utils';
 import { Pagination } from 'src/providers';
+import { getSubscribersDto } from './dto/get-subscribers.dto';
+import { selectUser } from '@modules/user/utils';
 
 @Injectable()
 export class EventService {
@@ -108,8 +114,6 @@ export class EventService {
 
     await Promise.all(updateEventsAsync);
   }
-
-  async updateEvent() {}
   async getEvents(query: GetEventDto, user: RequestUser) {
     const { skip, take, forumIds, search, status, order, from, to } = query;
     await this.updateEventStatus();
@@ -231,5 +235,223 @@ export class EventService {
 
     return event;
   }
-  async subscribeEvent() {}
+
+  async getIsValidUser(
+    user: RequestUser,
+    forum?: {
+      modId: string;
+    },
+  ) {
+    if (forum) {
+      return forum.modId === user.id;
+    }
+    return user.roles.includes(UserRole.ADMIN);
+  }
+
+  async deleteEvent(id: string, user: RequestUser) {
+    const event = await this.dbContext.event.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      include: {
+        forum: true,
+      },
+    });
+
+    const canDeleteEvent = this.getIsValidUser(user, event.forum);
+
+    if (!canDeleteEvent) {
+      throw new ForbiddenException('You cannot delete this event');
+    }
+
+    await this.dbContext.event.delete({
+      where: { id },
+    });
+  }
+
+  async cancelEvent(id: string, user: RequestUser) {
+    const event = await this.dbContext.event.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      include: {
+        forum: true,
+      },
+    });
+    if (event.status === EventStatus.CANCELLED) {
+      throw new BadRequestException('This event is already cancelled');
+    }
+
+    const canCancelEvent = this.getIsValidUser(user, event.forum);
+    if (!canCancelEvent) {
+      throw new ForbiddenException('You cannot cancel this event');
+    }
+
+    await this.dbContext.event.update({
+      where: { id },
+      data: {
+        status: EventStatus.CANCELLED,
+      },
+    });
+  }
+
+  async updateEvent(id: string, user: RequestUser, body: CreateEventDto) {}
+  async subscribeEvent(id: string, user: RequestUser) {
+    const event = await this.dbContext.event.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      include: {
+        forum: {
+          include: {
+            users: true,
+          },
+        },
+        users: true,
+      },
+    });
+
+    const doneStatuses: EventStatus[] = [
+      EventStatus.DONE,
+      EventStatus.CANCELLED,
+    ];
+    if (doneStatuses.includes(event.status)) {
+      throw new BadRequestException(
+        'The event is already ended or has been cancelled',
+      );
+    }
+
+    if (event.forum) {
+      const userIsInForum = event.forum.users.some(
+        ({ userId, status }) =>
+          userId === user.id && status === ResourceStatus.ACTIVE,
+      );
+
+      if (!userIsInForum) {
+        throw new ForbiddenException('You do not belong to this forum');
+      }
+    }
+
+    const userInEvent = event.users.some(({ userId }) => userId === user.id);
+    if (userInEvent) {
+      throw new BadRequestException(
+        'You have already subscribed to this event',
+      );
+    }
+
+    await this.dbContext.userToEvent.create({
+      data: {
+        eventId: id,
+        userId: user.id,
+      },
+    });
+  }
+
+  async unsubscribeEvent(id: string, user: RequestUser) {
+    const event = await this.dbContext.event.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      include: {
+        forum: {
+          include: {
+            users: true,
+          },
+        },
+        users: true,
+      },
+    });
+
+    const doneStatuses: EventStatus[] = [
+      EventStatus.DONE,
+      EventStatus.CANCELLED,
+    ];
+    if (doneStatuses.includes(event.status)) {
+      throw new BadRequestException(
+        'The event is already ended or has been cancelled',
+      );
+    }
+
+    if (event.forum) {
+      const userIsInForum = event.forum.users.some(
+        ({ userId, status }) =>
+          userId === user.id && status === ResourceStatus.ACTIVE,
+      );
+
+      if (!userIsInForum) {
+        throw new ForbiddenException('You do not belong to this forum');
+      }
+    }
+
+    const userInEvent = event.users.some(({ userId }) => userId === user.id);
+    if (!userInEvent) {
+      throw new BadRequestException(
+        'You have already subscribed to this event',
+      );
+    }
+
+    await this.dbContext.userToEvent.delete({
+      where: {
+        userId_eventId: {
+          userId: user.id,
+          eventId: id,
+        },
+      },
+    });
+  }
+
+  async getSubscribers(id: string, query: getSubscribersDto) {
+    const { skip, search, take } = query;
+
+    const andWhereConditions: Prisma.Enumerable<Prisma.UserToEventWhereInput> =
+      [
+        {
+          eventId: id,
+        },
+      ];
+
+    if (search) {
+      andWhereConditions.push({
+        user: {
+          OR: [
+            {
+              fullName: searchByMode(search),
+            },
+            {
+              email: searchByMode(search),
+            },
+          ],
+        },
+      });
+    }
+    const [subscribers, total] = await Promise.all([
+      this.dbContext.userToEvent.findMany({
+        where: {
+          AND: andWhereConditions,
+        },
+        skip,
+        take,
+        include: {
+          user: selectUser,
+        },
+        orderBy: {
+          createdAt: Prisma.SortOrder.desc,
+        },
+      }),
+      this.dbContext.userToEvent.count({
+        where: {
+          AND: andWhereConditions,
+        },
+      }),
+    ]);
+
+    return Pagination.of(
+      { skip, take },
+      total,
+      subscribers.map((s) => ({
+        id: s.userId,
+        ...s.user,
+      })),
+    );
+  }
 }
