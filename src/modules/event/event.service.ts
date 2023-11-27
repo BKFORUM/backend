@@ -20,6 +20,8 @@ import { Pagination } from 'src/providers';
 import { CreateEventDto } from './dto/create-event.dto';
 import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
+import { differenceBy } from 'lodash';
 
 @Injectable()
 export class EventService {
@@ -116,7 +118,7 @@ export class EventService {
           id: event.id,
         },
         data: {
-          status: this.getUpdateStatus(event.startAt, event.createdAt),
+          status: this.getUpdateStatus(event.startAt, event.endAt),
         },
       });
     });
@@ -304,7 +306,63 @@ export class EventService {
     });
   }
 
-  async updateEvent(id: string, user: RequestUser, body: CreateEventDto) {}
+  async updateEvent(id: string, user: RequestUser, body: UpdateEventDto) {
+    const { content, displayName, documents, endAt, location, startAt } = body;
+    const event = await this.dbContext.event.findUniqueOrThrow({
+      where: {
+        id,
+      },
+      include: {
+        forum: true,
+        documents: true,
+      },
+    });
+    if (event.status !== EventStatus.UPCOMING) {
+      throw new BadRequestException('You cannot edit this event');
+    }
+
+    const canUpdateEvent = this.getIsValidUser(user, event.forum);
+    if (!canUpdateEvent) {
+      throw new ForbiddenException('You cannot edit this event');
+    }
+
+    const newDocuments = differenceBy(documents, event.documents, 'fileUrl');
+    const oldDocuments = differenceBy(event.documents, documents, 'fileUrl');
+
+    const deleteDocuments = oldDocuments.length
+      ? {
+          id: {
+            in: oldDocuments.map(({ id }) => id),
+          },
+        }
+      : undefined;
+
+    const createDocuments = newDocuments.length
+      ? {
+          data: newDocuments.map(({ fileName, fileUrl }) => ({
+            fileName,
+            fileUrl,
+            userId: user.id,
+          })),
+        }
+      : undefined;
+    await this.dbContext.event.update({
+      where: {
+        id,
+      },
+      data: {
+        content,
+        displayName,
+        location,
+        startAt: toUtcTime(startAt),
+        endAt: toUtcTime(endAt),
+        documents: {
+          deleteMany: deleteDocuments,
+          createMany: createDocuments,
+        },
+      },
+    });
+  }
   async subscribeEvent(id: string, user: RequestUser) {
     const event = await this.dbContext.event.findUniqueOrThrow({
       where: {
