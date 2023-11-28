@@ -1,25 +1,34 @@
+import { toLocalTime, toUtcTime } from '@common/decorator/date.decorator';
+import { RequestUser, UserRole } from '@common/types';
+import { getOrderBy, searchByMode } from '@common/utils';
+import {
+  CreateCommentDto,
+  GetCommentDto,
+  UpdateCommentDto,
+} from '@modules/comments/dto';
+import { NotificationService } from '@modules/notification';
+import { selectUser } from '@modules/user/utils';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { PrismaService } from 'src/database/services';
-import { CreateEventDto } from './dto/create-event.dto';
-import { RequestUser, UserRole } from '@common/types';
 import { EventStatus, EventType, Prisma, ResourceStatus } from '@prisma/client';
-import dayjs from 'dayjs';
-import { toLocalTime, toUtcTime } from '@common/decorator/date.decorator';
-import { GetEventDto } from './dto/get-events.dto';
-import { getOrderBy, searchByMode } from '@common/utils';
+import { PrismaService } from 'src/database/services';
+import { MessageEvent } from 'src/gateway/enum';
 import { Pagination } from 'src/providers';
+import { CreateEventDto } from './dto/create-event.dto';
+import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
-import { selectUser } from '@modules/user/utils';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { differenceBy } from 'lodash';
 
 @Injectable()
 export class EventService {
-  constructor(private readonly dbContext: PrismaService) {}
+  constructor(
+    private readonly dbContext: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async createEvent(body: CreateEventDto, user: RequestUser) {
     const {
@@ -513,5 +522,114 @@ export class EventService {
         ...s.user,
       })),
     );
+  }
+
+  async createEventComment(
+    eventId: string,
+    user: RequestUser,
+    dto: CreateCommentDto,
+  ) {
+    const eventComment = await this.dbContext.eventComment.create({
+      data: {
+        eventId,
+        userId: user.id,
+        content: dto.content,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            createdAt: true,
+            updatedAt: true,
+            fullName: true,
+            email: true,
+            dateOfBirth: true,
+            gender: true,
+            phoneNumber: true,
+            address: true,
+            avatarUrl: true,
+            type: true,
+            facultyId: true,
+          },
+        },
+        event: true,
+      },
+    });
+
+    const postOwnerId = eventComment.event.userId;
+    const commentOwnerId = user.id;
+
+    if (postOwnerId !== commentOwnerId) {
+      await this.notificationService.notifyNotification(
+        eventComment.user,
+        eventComment.event.userId,
+        MessageEvent.EVENT_COMMENT_CREATED,
+        {
+          content: `đã đăng một bình luận vào sự kiện của bạn`,
+          modelId: eventComment.eventId,
+          modelName: 'post',
+          receiverId: eventComment.event.userId,
+        },
+      );
+    }
+
+    return eventComment;
+  }
+
+  async getEventComments(eventId: string, dto: GetCommentDto) {
+    const [eventComments, totalRecords] = await Promise.all([
+      this.dbContext.eventComment.findMany({
+        where: {
+          eventId,
+        },
+        skip: dto.skip,
+        take: dto.take,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              phoneNumber: true,
+              address: true,
+              avatarUrl: true,
+              dateOfBirth: true,
+              email: true,
+              gender: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: Prisma.SortOrder.desc,
+        },
+      }),
+      this.dbContext.eventComment.count({ where: { eventId } }),
+    ]);
+
+    return {
+      totalRecords,
+      data: eventComments,
+    };
+  }
+
+  async updateEventComment(
+    eventId: string,
+    userId: string,
+    eventCommentId: string,
+    dto: UpdateCommentDto,
+  ) {
+    await this.dbContext.eventComment.update({
+      where: { id: eventCommentId, userId, eventId },
+      data: dto,
+    });
+  }
+
+  async deleteEventComment(
+    eventId: string,
+    userId: string,
+    eventCommentId: string,
+  ) {
+    await this.dbContext.eventComment.delete({
+      where: { id: eventCommentId, userId, eventId },
+    });
   }
 }
