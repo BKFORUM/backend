@@ -32,6 +32,8 @@ import { WSAuthMiddleware } from 'src/middleware';
 import { MessageEvent } from './enum';
 import { GatewaySessionManager } from './gateway.session';
 import { FriendsService } from '@modules/friends';
+import { UserDto } from './dto';
+import { ConversationService } from '@modules/conversation/conversation.service';
 
 @WebSocketGateway({
   cors: {
@@ -54,38 +56,34 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly sessions: GatewaySessionManager,
     private readonly authService: AuthService,
     private readonly friendService: FriendsService,
+    private readonly conversationService: ConversationService,
   ) {}
   async handleConnection(client: AuthenticatedSocket) {
     const friends = await this.friendService.getFriendList(client.user);
     if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
-      friends.forEach((friend) => {
-        const sockets = this.sessions.getSocketsByUserId(friend.id);
-        if (sockets.length > 0) {
-          sockets.forEach((socket) => {
-            socket.emit(
-              'onFriendOnline',
-              omit(client.user, 'roles', 'iat', 'exp'),
-            );
-          });
-        }
+      const onlineFriendSockets = this.getOnlineUsers(friends);
+      console.log(onlineFriendSockets);
+      onlineFriendSockets.forEach((socket) => {
+        socket.emit('onFriendOnline', omit(client.user, 'roles', 'iat', 'exp'));
       });
     }
     this.sessions.setUserSocket(this.getSessionId(client), client);
   }
+
+  getOnlineUsers(users: UserDto[]) {
+    const userSockets = users
+      .map((user) => this.sessions.getSocketsByUserId(user.id))
+      .filter((sockets) => sockets.length > 0);
+    return userSockets.flat();
+  }
+
   async handleDisconnect(client: AuthenticatedSocket) {
     this.sessions.removeUserSocket(this.getSessionId(client));
     const friends = await this.friendService.getFriendList(client.user);
     if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
-      friends.forEach((friend) => {
-        const sockets = this.sessions.getSocketsByUserId(friend.id);
-        if (sockets.length > 0) {
-          sockets.forEach((socket) => {
-            socket.emit(
-              'onFriendOffline',
-              omit(client.user, 'roles', 'iat', 'exp'),
-            );
-          });
-        }
+      const onlineFriendSockets = this.getOnlineUsers(friends);
+      onlineFriendSockets.forEach((socket) => {
+        socket.emit('onFriendOnline', omit(client.user, 'roles', 'iat', 'exp'));
       });
     }
   }
@@ -154,10 +152,15 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @OnEvent(MessageEvent.MESSAGE_CREATED)
-  handleMessageCreateEvent(payload: GetMessageResponse) {
+  async handleMessageCreateEvent(payload: GetMessageResponse) {
     const { conversationId } = payload;
     this.logger.log(`Message in ${conversationId}`);
-    this.server.to(conversationId).emit('onMessage', payload);
+    const members = await this.conversationService.getMemberOfConversations(
+      conversationId,
+    );
+    const users = members.map(({ user }) => user);
+    const onlineUsers = this.getOnlineUsers(users);
+    onlineUsers.forEach((socket) => socket.emit('onMessage', payload));
   }
 
   @OnEvent(MessageEvent.CONVERSATION_JOINED)
