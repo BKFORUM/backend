@@ -557,19 +557,19 @@ export class EventService {
     const postOwnerId = eventComment.event.userId;
     const commentOwnerId = user.id;
 
-    if (postOwnerId !== commentOwnerId) {
-      await this.notificationService.notifyNotification(
-        eventComment.user,
-        eventComment.event.userId,
-        MessageEvent.EVENT_COMMENT_CREATED,
-        {
-          content: `đã đăng một bình luận vào sự kiện của bạn`,
-          modelId: eventComment.eventId,
-          modelName: 'post',
-          receiverId: eventComment.event.userId,
-        },
-      );
-    }
+    // if (postOwnerId !== commentOwnerId) {
+    //   await this.notificationService.notifyNotification(
+    //     eventComment.user,
+    //     eventComment.event.userId,
+    //     MessageEvent.EVENT_COMMENT_CREATED,
+    //     {
+    //       content: `đã đăng một bình luận vào sự kiện của bạn`,
+    //       modelId: eventComment.eventId,
+    //       modelName: 'event',
+    //       receiverId: eventComment.event.userId,
+    //     },
+    //   );
+    // }
 
     return eventComment;
   }
