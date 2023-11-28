@@ -76,6 +76,7 @@ export class EventService {
         startAt: toUtcTime(startAt),
         endAt: toUtcTime(endAt),
         type,
+        forumId,
         status: EventStatus.UPCOMING,
         displayName,
         documents: {
@@ -206,6 +207,7 @@ export class EventService {
               users: true,
             },
           },
+          documents: true,
         },
         skip,
         take,
