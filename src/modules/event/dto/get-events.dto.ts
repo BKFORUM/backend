@@ -77,12 +77,20 @@ export class GetEventDto {
   to?: Date;
 
   @ApiPropertyOptional({
-    description: 'Event type',
+    description: 'Event status',
     type: String,
   })
   @IsOptional()
   @IsEnum(EventStatus)
   status?: EventStatus;
+
+  @ApiPropertyOptional({
+    description: 'Event type',
+    type: String,
+  })
+  @IsOptional()
+  @IsEnum(EventType)
+  type?: EventType;
 
   @ApiPropertyOptional({
     description: `Order by keyword. \n\n  Available values: ${Object.values(

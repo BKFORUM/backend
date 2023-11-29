@@ -22,6 +22,8 @@ import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { differenceBy } from 'lodash';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { type } from 'os';
 
 @Injectable()
 export class EventService {
@@ -127,7 +129,8 @@ export class EventService {
     await Promise.all(updateEventsAsync);
   }
   async getEvents(query: GetEventDto, user: RequestUser) {
-    const { skip, take, forumIds, search, status, order, from, to } = query;
+    const { skip, take, forumIds, search, status, order, from, to, type } =
+      query;
     await this.updateEventStatus();
     const andWhereConditions: Prisma.Enumerable<Prisma.EventWhereInput> = [];
     const viewConditions: Prisma.Enumerable<Prisma.EventWhereInput> = [
@@ -184,6 +187,11 @@ export class EventService {
         status,
       });
     }
+    if (type) {
+      andWhereConditions.push({
+        type,
+      });
+    }
     if (from) {
       const fromTime = toUtcTime(new Date(from));
       const toTime = to ?? new Date();
@@ -216,6 +224,7 @@ export class EventService {
               users: true,
             },
           },
+          users: true,
           documents: true,
         },
         skip,
@@ -236,6 +245,7 @@ export class EventService {
         ...event,
         startAt: toLocalTime(event.startAt),
         endAt: toLocalTime(event.endAt),
+        isSubscriber: event.users.some(({ userId }) => userId === user.id),
       })),
     );
   }
