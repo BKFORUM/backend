@@ -1,10 +1,10 @@
 import { Models, UserResponse } from '@common/types';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
 import { GetNotificationDto } from './dto';
 import { NotificationResponse } from './interfaces/notification-response.interface';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
