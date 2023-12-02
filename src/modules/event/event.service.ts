@@ -14,16 +14,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { EventStatus, EventType, Prisma, ResourceStatus } from '@prisma/client';
+import { differenceBy } from 'lodash';
 import { PrismaService } from 'src/database/services';
-import { MessageEvent } from 'src/gateway/enum';
 import { Pagination } from 'src/providers';
 import { CreateEventDto } from './dto/create-event.dto';
 import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { differenceBy } from 'lodash';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { type } from 'os';
 
 @Injectable()
 export class EventService {
@@ -224,7 +221,12 @@ export class EventService {
               users: true,
             },
           },
-          users: true,
+          users: {
+            select:{
+              userId: true,
+              user: selectUser
+            }
+          },
           documents: true,
         },
         skip,
@@ -245,6 +247,7 @@ export class EventService {
         ...event,
         startAt: toLocalTime(event.startAt),
         endAt: toLocalTime(event.endAt),
+        users: event.users,
         isSubscriber: event.users.some(({ userId }) => userId === user.id),
       })),
     );
