@@ -489,8 +489,8 @@ model ReplyComment {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   
-  user        User      @relation(fields: [userId], references: [id])
-  comment     Comment   @relation(fields: [commentId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment     Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@map("reply_comment")
 }
