@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { User, UserType } from '@prisma/client';
+import { Friendship, ResourceStatus, User, UserType } from '@prisma/client';
 import { isNotEmpty } from 'class-validator';
 import { concat, isEmpty, omit } from 'lodash';
 import {
@@ -286,12 +286,11 @@ export class UserService {
 
     const mappedUsers = users.map((user) => {
       const requests = concat(user.sentRequests, user.receivedRequests);
-
-      const friendStatus =
-        requests.find(
-          ({ senderId, receiverId }) =>
-            reqUser.id === senderId || reqUser.id === receiverId,
-        )?.status ?? 'NOT FRIEND';
+      const yourRequest = requests.find(
+        ({ senderId, receiverId }) =>
+          reqUser.id === senderId || reqUser.id === receiverId,
+      );
+      const friendStatus = this.getRequestStatus(yourRequest, reqUser.id);
 
       return {
         ...omit(user, 'sentRequests', 'receivedRequests'),
@@ -300,6 +299,18 @@ export class UserService {
     });
 
     return Pagination.of({ skip, take }, total, mappedUsers);
+  }
+
+  private getRequestStatus(request: Friendship, userId: string) {
+    if (!request) return 'NOT FRIEND';
+    switch (request.status) {
+      case ResourceStatus.PENDING:
+        const pendingStatus =
+          userId === request.receiverId ? 'PENDING_RECEIVED' : 'PENDING_SENT';
+        return pendingStatus;
+      default:
+        return request.status;
+    }
   }
 
   updateUser = async (id: string, data: UpdateUserDto) => {
