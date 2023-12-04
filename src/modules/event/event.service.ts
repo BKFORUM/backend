@@ -21,6 +21,8 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { GetEventDto } from './dto/get-events.dto';
 import { getSubscribersDto } from './dto/get-subscribers.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { MessageEvent } from 'src/gateway/enum';
 
 @Injectable()
 export class EventService {
@@ -81,8 +83,8 @@ export class EventService {
       data: {
         location,
         content,
-        startAt: toUtcTime(startAt),
-        endAt: toUtcTime(endAt),
+        startAt,
+        endAt,
         type,
         forumId,
         status: EventStatus.UPCOMING,
@@ -95,11 +97,9 @@ export class EventService {
   }
 
   private getUpdateStatus(startAt: Date, endAt: Date) {
-    const now = toLocalTime(new Date());
-    const endTime = toLocalTime(endAt);
-    const startTime = toLocalTime(startAt);
-    if (endTime < now) return EventStatus.DONE;
-    if (endTime > now && startTime < now) return EventStatus.HAPPENING;
+    const now = new Date();
+    if (endAt < now) return EventStatus.DONE;
+    if (endAt > now && startAt < now) return EventStatus.HAPPENING;
     return EventStatus.UPCOMING;
   }
 
@@ -190,7 +190,7 @@ export class EventService {
       });
     }
     if (from) {
-      const fromTime = toUtcTime(new Date(from));
+      const fromTime = new Date(from);
       const toTime = to ?? new Date();
       andWhereConditions.push({
         OR: [
@@ -222,10 +222,10 @@ export class EventService {
             },
           },
           users: {
-            select:{
+            select: {
               userId: true,
-              user: selectUser
-            }
+              user: selectUser,
+            },
           },
           documents: true,
         },
@@ -245,19 +245,29 @@ export class EventService {
       total,
       events.map((event) => ({
         ...event,
-        startAt: toLocalTime(event.startAt),
-        endAt: toLocalTime(event.endAt),
+        startAt: event.startAt,
+        endAt: event.endAt,
         users: event.users,
         isSubscriber: event.users.some(({ userId }) => userId === user.id),
       })),
     );
   }
   async getEventById(id: string) {
-    const event = await this.dbContext.event.findUniqueOrThrow({
+    let event = await this.dbContext.event.findUniqueOrThrow({
       where: {
         id,
       },
     });
+    if (event.startAt < new Date() && event.status === EventStatus.UPCOMING) {
+      event = await this.dbContext.event.update({
+        where: {
+          id,
+        },
+        data: {
+          status: this.getUpdateStatus(event.startAt, event.endAt),
+        },
+      });
+    }
 
     return event;
   }
@@ -644,5 +654,45 @@ export class EventService {
     await this.dbContext.eventComment.delete({
       where: { id: eventCommentId, userId, eventId },
     });
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async handleNotify() {
+    const now = new Date();
+    const oneHourTime = 60 * 60 * 1000;
+    const then = new Date(now.getTime() + oneHourTime);
+    const events = await this.dbContext.event.findMany({
+      where: {
+        startAt: {
+          gte: now,
+          lte: then,
+        },
+      },
+      select: {
+        users: {
+          select: {
+            eventId: true,
+            userId: true,
+          },
+        },
+      },
+    });
+    const sendNotifications = events
+      .flatMap((event) => event.users)
+      .map(async (user) => {
+        return this.notificationService.notifyNotification(
+          null,
+          user.userId,
+          MessageEvent.EVENT_UPCOMING,
+          {
+            content: 'Một sự kiện bạn yêu thích sắp diễn ra',
+            modelName: 'event',
+            modelId: user.eventId,
+            receiverId: user.userId,
+          },
+        );
+      });
+
+    await Promise.all(sendNotifications);
   }
 }

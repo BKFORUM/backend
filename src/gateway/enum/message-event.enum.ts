@@ -14,5 +14,6 @@ export enum MessageEvent {
   REPLY_COMMENT_CREATED = 'reply_comment.created',
   FORUM_APPROVED = 'forum.approved',
   FRIENDSHIP_CREATED = 'friendship.created',
-  EVENT_COMMENT_CREATED = "event_comment.created"
+  EVENT_COMMENT_CREATED = 'event_comment.created',
+  EVENT_UPCOMING = 'event.upcoming',
 }

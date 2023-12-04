@@ -14,7 +14,7 @@ export class NotificationService {
   ) {}
 
   async notifyNotification(
-    sender: UserResponse,
+    sender: UserResponse | null,
     receiverId: string,
     messageEvent: string,
     data: {
@@ -30,7 +30,7 @@ export class NotificationService {
         modelId: data.modelId,
         modelName: String(data.modelName),
         userId: data.receiverId,
-        senderId: sender.id,
+        senderId: sender?.id ?? null,
       },
       include: {
         sender: {
@@ -60,21 +60,22 @@ export class NotificationService {
     userId: string,
     dto: GetNotificationDto,
   ): Promise<NotificationResponse> {
-    const [notifications, totalRecords, totalUnreadNotifications] = await Promise.all([
-      this.dbContext.notification.findMany({
-        include: {
-          sender: true,
-        },
-        where: { userId },
-        skip: dto.skip,
-        take: dto.take,
-        orderBy: {
-          createdAt: Prisma.SortOrder.desc,
-        }
-      }),
-      this.dbContext.notification.count({ where: { userId } }),
-      this.dbContext.notification.count({ where: { userId, readAt: null } }),
-    ]);
+    const [notifications, totalRecords, totalUnreadNotifications] =
+      await Promise.all([
+        this.dbContext.notification.findMany({
+          include: {
+            sender: true,
+          },
+          where: { userId },
+          skip: dto.skip,
+          take: dto.take,
+          orderBy: {
+            createdAt: Prisma.SortOrder.desc,
+          },
+        }),
+        this.dbContext.notification.count({ where: { userId } }),
+        this.dbContext.notification.count({ where: { userId, readAt: null } }),
+      ]);
 
     return {
       data: notifications,
