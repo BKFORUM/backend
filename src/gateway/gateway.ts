@@ -324,4 +324,15 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     }
   }
+
+  @OnEvent(MessageEvent.EVENT_UPCOMING)
+  handleUpComingEvent(payload, userId: string) {
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
+
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onUpcomingEvent', payload);
+      });
+    }
+  }
 }

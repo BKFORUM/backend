@@ -11,7 +11,7 @@ export class IsAfterConstraint implements ValidatorConstraintInterface {
     let comparisonTime =
       comparisonValue !== 'now'
         ? new Date(args.object[args.constraints[0]])
-        : toLocalTime(new Date());
+        : new Date();
 
     return new Date(propertyValue) > comparisonTime;
   }
