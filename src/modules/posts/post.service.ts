@@ -16,6 +16,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { GetAllPostsDto } from './dto/get-all-posts.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostResponse } from './interfaces/post-response.interface';
+import { selectUser } from '@modules/user/utils';
 
 @Injectable()
 export class PostService {
@@ -89,7 +90,9 @@ export class PostService {
             },
           },
           likes: {
-            where: { userId: user.id },
+            include: {
+              user: selectUser,
+            }
           },
           _count: {
             select: {
@@ -113,7 +116,7 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+        likedAt: post.likes.filter((like) => like.userId === user.id)[0]?.createdAt
       };
     });
 
