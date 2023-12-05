@@ -92,7 +92,7 @@ export class PostService {
           likes: {
             include: {
               user: selectUser,
-            }
+            },
           },
           _count: {
             select: {
@@ -116,7 +116,8 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === user.id)[0]?.createdAt
+        likedAt: post.likes.filter((like) => like.userId === user.id)[0]
+          ?.createdAt,
       };
     });
 
@@ -181,7 +182,11 @@ export class PostService {
               likes: true,
             },
           },
-          likes: { where: { userId: id } },
+          likes: {
+            include: {
+              user: selectUser,
+            },
+          },
           documents: {
             select: {
               id: true,
@@ -197,7 +202,8 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+        likedAt: post.likes.filter((like) => like.userId === id)[0]
+          ?.createdAt,
       };
     });
 
