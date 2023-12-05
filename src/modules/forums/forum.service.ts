@@ -298,6 +298,16 @@ export class ForumService {
             user: selectUser,
           },
         },
+        events: {
+          select: {
+            id: true,
+            content: true,
+            startAt: true,
+            endAt: true,
+            displayName: true,
+            location: true,
+          },
+        },
       },
     });
 
