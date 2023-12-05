@@ -1,4 +1,5 @@
 import { Models, UserResponse } from '@common/types';
+import { selectUser } from '@modules/user/utils';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
@@ -64,7 +65,7 @@ export class NotificationService {
       await Promise.all([
         this.dbContext.notification.findMany({
           include: {
-            sender: true,
+            sender: selectUser,
           },
           where: { userId },
           skip: dto.skip,

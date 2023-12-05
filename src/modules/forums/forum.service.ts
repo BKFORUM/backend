@@ -651,7 +651,9 @@ export class ForumService {
             },
           },
           likes: {
-            where: { userId },
+            include: {
+              user: selectUser,
+            },
           },
           _count: {
             select: {
@@ -675,7 +677,8 @@ export class ForumService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.length ? first(post.likes).createdAt : null,
+        likedAt: post.likes.filter((like) => like.userId === userId)[0]
+        ?.createdAt,
       };
     });
 
