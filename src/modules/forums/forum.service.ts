@@ -146,6 +146,7 @@ export class ForumService {
                   status: ResourceStatus.ACTIVE,
                 },
               },
+              events: true,
             },
           },
         },
@@ -934,6 +935,7 @@ export class ForumService {
         _count: {
           select: {
             users: true,
+            events: true,
           },
         },
       },
