@@ -257,9 +257,25 @@ export class EventService {
       where: {
         id,
       },
+      include: {
+        _count: {
+          select: {
+            comments: true,
+            users: true,
+          },
+        },
+        comments: true,
+        documents: true,
+        users: {
+          select: {
+            userId: true,
+            user: selectUser,
+          },
+        },
+      },
     });
     if (event.startAt < new Date() && event.status === EventStatus.UPCOMING) {
-      event = await this.dbContext.event.update({
+      await this.dbContext.event.update({
         where: {
           id,
         },
@@ -269,7 +285,10 @@ export class EventService {
       });
     }
 
-    return event;
+    return {
+      ...event,
+      status: this.getUpdateStatus(event.startAt, event.endAt),
+    };
   }
 
   async getIsValidUser(
