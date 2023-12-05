@@ -252,7 +252,7 @@ export class EventService {
       })),
     );
   }
-  async getEventById(id: string) {
+  async getEventById(id: string, user: RequestUser) {
     let event = await this.dbContext.event.findUniqueOrThrow({
       where: {
         id,
@@ -288,6 +288,7 @@ export class EventService {
     return {
       ...event,
       status: this.getUpdateStatus(event.startAt, event.endAt),
+      isSubscriber: event.users.some(({ userId }) => userId === user.id),
     };
   }
 

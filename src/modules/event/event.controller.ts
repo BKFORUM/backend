@@ -67,8 +67,8 @@ export class EventController {
     description: 'Delete an event by id',
   })
   @Get(':id')
-  async getEventById(@Param() { id }: UUIDParam) {
-    return await this.eventService.getEventById(id);
+  async getEventById(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
+    return await this.eventService.getEventById(id, user);
   }
 
   @ApiOperation({
