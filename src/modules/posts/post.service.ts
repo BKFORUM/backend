@@ -109,6 +109,7 @@ export class PostService {
           },
           status: true,
           createdAt: true,
+          updatedAt: true,
         },
       }),
     ]);
@@ -195,6 +196,7 @@ export class PostService {
             },
           },
           status: true,
+          updatedAt: true,
         },
       }),
     ]);
