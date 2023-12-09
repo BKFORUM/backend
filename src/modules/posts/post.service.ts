@@ -202,8 +202,7 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === id)[0]
-          ?.createdAt,
+        likedAt: post.likes.filter((like) => like.userId === id)[0]?.createdAt,
       };
     });
 
@@ -599,8 +598,6 @@ export class PostService {
       throw new BadRequestException('This user have already liked this post');
     }
 
-    await this.checkIfUserIsInTheSamePostForum(postId, user.id);
-
     const like = await this.dbContext.like.create({
       data: {
         postId,
@@ -633,29 +630,19 @@ export class PostService {
   }
 
   async unlikePost(postId: string, userId: string): Promise<void> {
-    await this.checkIfUserIsInTheSamePostForum(postId, userId);
-    await this.dbContext.like.delete({
-      where: { userId_postId: { postId, userId } },
-    });
-  }
-
-  private async checkIfUserIsInTheSamePostForum(id: string, userId: string) {
-    const post = await this.dbContext.post.findUniqueOrThrow({
-      where: { id },
-    });
-    const isInSameForum = await this.dbContext.userToForum.findUnique({
+    const like = await this.dbContext.like.findUnique({
       where: {
-        userId_forumId: {
+        userId_postId: {
           userId,
-          forumId: post.forumId,
+          postId,
         },
       },
     });
-
-    if (!isInSameForum) {
-      throw new BadRequestException(
-        "This user is not in the same post's forum",
-      );
+    if (!like) {
+      throw new BadRequestException('You have not liked this post');
     }
+    await this.dbContext.like.delete({
+      where: { userId_postId: { postId, userId } },
+    });
   }
 }
