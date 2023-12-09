@@ -196,8 +196,7 @@ export class PostService {
               fileUrl: true,
             },
           },
-          status: true,
-          updatedAt: true,
+          status: true
         },
       }),
     ]);
