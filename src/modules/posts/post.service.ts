@@ -116,8 +116,9 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === user.id)[0]
-          ?.createdAt,
+        likedAt:
+          post.likes.filter((like) => like.userId === user.id)[0]?.createdAt ??
+          null,
       };
     });
 
@@ -202,7 +203,8 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === id)[0]?.createdAt,
+        likedAt:
+          post.likes.filter((like) => like.userId === id)[0]?.createdAt ?? null,
       };
     });
 
@@ -370,7 +372,7 @@ export class PostService {
     this.logger.log('Delete a post record', { post });
   }
 
-  async getPostById(id: string) {
+  async getPostById(id: string, user: RequestUser) {
     const post = await this.dbContext.post.findUniqueOrThrow({
       where: {
         id,
@@ -409,7 +411,9 @@ export class PostService {
 
     return {
       ...post,
-      likedAt: post.likes.length ? first(post.likes).createdAt : null,
+      likedAt: post.likes.length
+        ? post.likes.find(({ userId }) => userId === user.id)?.createdAt ?? null
+        : null,
       documents: post.documents.map((document) => ({
         id: document.id,
         fileName: document.fileName.split('_')[0],

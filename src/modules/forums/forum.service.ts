@@ -677,8 +677,9 @@ export class ForumService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === userId)[0]
-        ?.createdAt,
+        likedAt:
+          post.likes.filter((like) => like.userId === userId)[0]?.createdAt ??
+          null,
       };
     });
 
