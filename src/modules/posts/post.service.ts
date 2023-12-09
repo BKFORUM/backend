@@ -117,8 +117,7 @@ export class PostService {
       return {
         ...post,
         likedAt:
-          post.likes.filter((like) => like.userId === user.id)[0]?.createdAt ??
-          null,
+          post.likes.find((like) => like.userId === user.id)?.createdAt ?? null,
       };
     });
 
@@ -204,7 +203,7 @@ export class PostService {
       return {
         ...post,
         likedAt:
-          post.likes.filter((like) => like.userId === id)[0]?.createdAt ?? null,
+          post.likes.find((like) => like.userId === id)?.createdAt ?? null,
       };
     });
 

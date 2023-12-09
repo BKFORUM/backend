@@ -678,8 +678,7 @@ export class ForumService {
       return {
         ...post,
         likedAt:
-          post.likes.filter((like) => like.userId === userId)[0]?.createdAt ??
-          null,
+          post.likes.find((like) => like.userId === userId)?.createdAt ?? null,
       };
     });
 
