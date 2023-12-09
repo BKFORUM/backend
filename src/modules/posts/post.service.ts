@@ -124,7 +124,7 @@ export class PostService {
     return Pagination.of({ take, skip }, total, postResponse);
   }
 
-  async getPostsOfUser(id: string, query: GetAllPostsDto) {
+  async getPostsOfUser(id: string, query: GetAllPostsDto, user) {
     const { search, skip, take, order, status } = query;
     const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
@@ -176,6 +176,7 @@ export class PostService {
             },
           },
           createdAt: true,
+          updatedAt: true,
           _count: {
             select: {
               comments: true,
@@ -203,7 +204,7 @@ export class PostService {
       return {
         ...post,
         likedAt:
-          post.likes.find((like) => like.userId === id)?.createdAt ?? null,
+          post.likes.find((like) => like.userId === user.id)?.createdAt ?? null,
       };
     });
 
