@@ -117,15 +117,15 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === user.id)[0]
-          ?.createdAt,
+        likedAt:
+          post.likes.find((like) => like.userId === user.id)?.createdAt ?? null,
       };
     });
 
     return Pagination.of({ take, skip }, total, postResponse);
   }
 
-  async getPostsOfUser(id: string, query: GetAllPostsDto) {
+  async getPostsOfUser(id: string, query: GetAllPostsDto, user) {
     const { search, skip, take, order, status } = query;
     const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
@@ -177,6 +177,7 @@ export class PostService {
             },
           },
           createdAt: true,
+          updatedAt: true,
           _count: {
             select: {
               comments: true,
@@ -204,8 +205,8 @@ export class PostService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === id)[0]
-          ?.createdAt,
+        likedAt:
+          post.likes.find((like) => like.userId === user.id)?.createdAt ?? null,
       };
     });
 
@@ -373,7 +374,7 @@ export class PostService {
     this.logger.log('Delete a post record', { post });
   }
 
-  async getPostById(id: string) {
+  async getPostById(id: string, user: RequestUser) {
     const post = await this.dbContext.post.findUniqueOrThrow({
       where: {
         id,
@@ -412,7 +413,9 @@ export class PostService {
 
     return {
       ...post,
-      likedAt: post.likes.length ? first(post.likes).createdAt : null,
+      likedAt: post.likes.length
+        ? post.likes.find(({ userId }) => userId === user.id)?.createdAt ?? null
+        : null,
       documents: post.documents.map((document) => ({
         id: document.id,
         fileName: document.fileName.split('_')[0],
@@ -601,8 +604,6 @@ export class PostService {
       throw new BadRequestException('This user have already liked this post');
     }
 
-    await this.checkIfUserIsInTheSamePostForum(postId, user.id);
-
     const like = await this.dbContext.like.create({
       data: {
         postId,
@@ -635,29 +636,19 @@ export class PostService {
   }
 
   async unlikePost(postId: string, userId: string): Promise<void> {
-    await this.checkIfUserIsInTheSamePostForum(postId, userId);
-    await this.dbContext.like.delete({
-      where: { userId_postId: { postId, userId } },
-    });
-  }
-
-  private async checkIfUserIsInTheSamePostForum(id: string, userId: string) {
-    const post = await this.dbContext.post.findUniqueOrThrow({
-      where: { id },
-    });
-    const isInSameForum = await this.dbContext.userToForum.findUnique({
+    const like = await this.dbContext.like.findUnique({
       where: {
-        userId_forumId: {
+        userId_postId: {
           userId,
-          forumId: post.forumId,
+          postId,
         },
       },
     });
-
-    if (!isInSameForum) {
-      throw new BadRequestException(
-        "This user is not in the same post's forum",
-      );
+    if (!like) {
+      throw new BadRequestException('You have not liked this post');
     }
+    await this.dbContext.like.delete({
+      where: { userId_postId: { postId, userId } },
+    });
   }
 }

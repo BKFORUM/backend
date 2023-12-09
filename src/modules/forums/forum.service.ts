@@ -298,6 +298,16 @@ export class ForumService {
             user: selectUser,
           },
         },
+        events: {
+          select: {
+            id: true,
+            content: true,
+            startAt: true,
+            endAt: true,
+            displayName: true,
+            location: true,
+          },
+        },
       },
     });
 
@@ -667,8 +677,8 @@ export class ForumService {
     const postResponse = posts.map((post) => {
       return {
         ...post,
-        likedAt: post.likes.filter((like) => like.userId === userId)[0]
-        ?.createdAt,
+        likedAt:
+          post.likes.find((like) => like.userId === userId)?.createdAt ?? null,
       };
     });
 

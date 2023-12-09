@@ -90,8 +90,9 @@ export class UserController {
   async getPostOfUser(
     @Param() { id }: UUIDParam,
     @Query() query: GetAllPostsDto,
+    @ReqUser() user: RequestUser,
   ) {
-    return this.postService.getPostsOfUser(id, query);
+    return this.postService.getPostsOfUser(id, query, user);
   }
 
   @ApiOperation({

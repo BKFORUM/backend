@@ -53,8 +53,8 @@ export class PostController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getPostById(@Param() { id }: UUIDParam) {
-    return this.postService.getPostById(id);
+  async getPostById(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
+    return this.postService.getPostById(id, user);
   }
 
   @Delete(':id')
@@ -101,10 +101,7 @@ export class PostController {
   })
   @Get(':id/comments')
   @HttpCode(HttpStatus.OK)
-  getComments(
-    @Param() { id }: UUIDParam,
-    @Query() dto: GetCommentDto,
-  ) {
+  getComments(@Param() { id }: UUIDParam, @Query() dto: GetCommentDto) {
     return this.postService.getComments(id, dto);
   }
 
@@ -113,7 +110,10 @@ export class PostController {
   })
   @Post(':id/likes')
   @HttpCode(HttpStatus.CREATED)
-  likePost(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser): Promise<Like> {
+  likePost(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+  ): Promise<Like> {
     console.log(user);
     return this.postService.likePost(id, user);
   }
