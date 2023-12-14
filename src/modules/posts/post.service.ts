@@ -387,6 +387,7 @@ export class PostService {
         updatedAt: true,
         user: {
           select: {
+            id: true,
             email: true,
             fullName: true,
             avatarUrl: true,
