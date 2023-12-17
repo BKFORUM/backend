@@ -160,6 +160,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() body: ReadMessageDto,
   ) {
     const { conversationId, messageId } = body;
+    console.log(`${client.user.fullName} read a message ${messageId}`);
     return await this.conversationService.readMessage(
       messageId,
       conversationId,
