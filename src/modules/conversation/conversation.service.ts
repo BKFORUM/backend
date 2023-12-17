@@ -113,6 +113,7 @@ export class ConversationService {
               createdAt: true,
               updatedAt: true,
               userId: true,
+              content: true,
               author: {
                 select: {
                   user: selectUser,
@@ -124,6 +125,7 @@ export class ConversationService {
           forumId: true,
           users: {
             select: {
+              lastReadMessageId: true,
               userId: true,
               displayName: true,
               user: selectUser,
@@ -143,6 +145,7 @@ export class ConversationService {
 
     const mappedConversations = conversations.map((c) => ({
       ...c,
+
       avatarUrl:
         c.type === ConversationType.GROUP_CHAT
           ? c.avatarUrl
@@ -207,6 +210,14 @@ export class ConversationService {
         lastMessageOfConversation: {
           connect: {
             id: conversationId,
+          },
+        },
+        readBy: {
+          connect: {
+            conversationId_userId: {
+              userId: user.id,
+              conversationId,
+            },
           },
         },
       },
@@ -493,6 +504,7 @@ export class ConversationService {
               users: {
                 select: {
                   userId: true,
+                  lastReadMessageId: true,
                   displayName: true,
                   user: selectUser,
                 },
@@ -513,6 +525,10 @@ export class ConversationService {
 
     const mappedMessages = messages.map((m) => ({
       ...omit(m, 'conversation'),
+      isRead: m.conversation.users.some(
+        (readUser) =>
+          readUser.userId === user.id && readUser.lastReadMessageId === m.id,
+      ),
       author: {
         ...m.author.user,
         displayName: getAuthorDisplayName(m.author),
@@ -520,5 +536,19 @@ export class ConversationService {
     }));
 
     return Pagination.of({ skip, take }, total, mappedMessages);
+  }
+
+  async readMessage(messageId: string, conversationId: string, userId: string) {
+    await this.dbContext.userToConversation.update({
+      where: {
+        conversationId_userId: {
+          conversationId,
+          userId,
+        },
+      },
+      data: {
+        lastReadMessageId: messageId,
+      },
+    });
   }
 }

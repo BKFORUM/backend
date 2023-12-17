@@ -32,7 +32,7 @@ import { WSAuthMiddleware } from 'src/middleware';
 import { MessageEvent } from './enum';
 import { GatewaySessionManager } from './gateway.session';
 import { FriendsService } from '@modules/friends';
-import { UserDto } from './dto';
+import { ReadMessageDto, UserDto } from './dto';
 import { ConversationService } from '@modules/conversation/conversation.service';
 
 @WebSocketGateway({
@@ -152,6 +152,19 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('tag')
   handleTag(client: any, payload: any): string {
     return 'Hello go';
+  }
+
+  @SubscribeMessage('onReadMessage')
+  async handleReadMessage(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() body: ReadMessageDto,
+  ) {
+    const { conversationId, messageId } = body;
+    return await this.conversationService.readMessage(
+      messageId,
+      conversationId,
+      client.user.id,
+    );
   }
 
   @OnEvent(MessageEvent.MESSAGE_CREATED)
