@@ -1,5 +1,5 @@
 import { ReqUser } from '@common/decorator/request-user.decorator';
-import { UUIDParam } from '@common/types';
+import { RequestUser, UUIDParam } from '@common/types';
 import {
   Controller,
   Get,
@@ -45,5 +45,14 @@ export class NotificationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   markAsReadNotification(@Param() { id }: UUIDParam): Promise<void> {
     return this.notificationService.markAsReadNotification(id);
+  }
+
+  @ApiProperty({
+    description: 'Read all notification of user',
+  })
+  @Patch('all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  readAllNotification(@ReqUser() { id }: RequestUser): Promise<void> {
+    return this.notificationService.readAllNotifications(id);
   }
 }

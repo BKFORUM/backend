@@ -106,7 +106,20 @@ export class ConversationService {
           avatarUrl: true,
           id: true,
           displayName: true,
-          lastMessage: true,
+          lastMessage: {
+            select: {
+              id: true,
+              conversationId: true,
+              createdAt: true,
+              updatedAt: true,
+              userId: true,
+              author: {
+                select: {
+                  user: selectUser,
+                },
+              },
+            },
+          },
           type: true,
           forumId: true,
           users: {
@@ -215,6 +228,8 @@ export class ConversationService {
           select: {
             id: true,
             displayName: true,
+            avatarUrl: true,
+            type: true,
             users: {
               select: {
                 userId: true,
@@ -228,7 +243,15 @@ export class ConversationService {
     });
 
     const mappedMessage = {
-      ...omit(message, 'conversation'),
+      ...message,
+      conversation: {
+        ...message.conversation,
+        avatarUrl:
+          message.conversation.type === ConversationType.GROUP_CHAT
+            ? message.conversation.avatarUrl
+            : this.getOtherUserAvatar(message.conversation.users, user),
+        displayName: getConversationDisplayName(message.conversation, user),
+      },
       author: {
         ...message.author.user,
         displayName: getAuthorDisplayName(message.author),

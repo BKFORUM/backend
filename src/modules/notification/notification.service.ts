@@ -57,6 +57,18 @@ export class NotificationService {
     return notification;
   }
 
+  async readAllNotifications(userId: string) {
+    await this.dbContext.notification.updateMany({
+      where: {
+        readAt: null,
+        userId,
+      },
+      data: {
+        readAt: new Date(),
+      },
+    });
+  }
+
   async getAllNotifications(
     userId: string,
     dto: GetNotificationDto,
