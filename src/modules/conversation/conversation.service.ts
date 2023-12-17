@@ -145,7 +145,11 @@ export class ConversationService {
 
     const mappedConversations = conversations.map((c) => ({
       ...c,
-
+      isRead: c.users.some(
+        (readUser) =>
+          readUser.userId === user.id &&
+          readUser.lastReadMessageId === c.lastMessage.id,
+      ),
       avatarUrl:
         c.type === ConversationType.GROUP_CHAT
           ? c.avatarUrl
