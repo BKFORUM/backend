@@ -143,19 +143,20 @@ export class ConversationService {
       }),
     ]);
 
-    const mappedConversations = conversations.map((c) => ({
-      ...c,
-      isRead: c.users.some(
-        (readUser) =>
-          readUser.userId === user.id &&
-          readUser.lastReadMessageId === c.lastMessage.id,
-      ),
-      avatarUrl:
-        c.type === ConversationType.GROUP_CHAT
-          ? c.avatarUrl
-          : this.getOtherUserAvatar(c.users, user),
-      displayName: getConversationDisplayName(c, user),
-    }));
+    const mappedConversations = conversations.map((c) => {
+      const readUser = c.users.find(({ userId }) => userId === user.id);
+      return {
+        ...c,
+        isRead:
+          readUser.lastReadMessageId !== null &&
+          readUser.lastReadMessageId === c.lastMessage?.id,
+        avatarUrl:
+          c.type === ConversationType.GROUP_CHAT
+            ? c.avatarUrl
+            : this.getOtherUserAvatar(c.users, user),
+        displayName: getConversationDisplayName(c, user),
+      };
+    });
 
     return Pagination.of({ skip, take }, total, mappedConversations);
   }
