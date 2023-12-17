@@ -109,6 +109,7 @@ export class PostService {
           },
           status: true,
           createdAt: true,
+          updatedAt: true,
         },
       }),
     ]);
@@ -195,7 +196,7 @@ export class PostService {
               fileUrl: true,
             },
           },
-          status: true,
+          status: true
         },
       }),
     ]);
@@ -386,6 +387,7 @@ export class PostService {
         updatedAt: true,
         user: {
           select: {
+            id: true,
             email: true,
             fullName: true,
             avatarUrl: true,
