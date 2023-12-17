@@ -260,7 +260,7 @@ export class ConversationService {
     const mappedMessage = {
       ...message,
       conversation: {
-        ...message.conversation,
+        ...omit(message.conversation, 'users'),
         avatarUrl:
           message.conversation.type === ConversationType.GROUP_CHAT
             ? message.conversation.avatarUrl
