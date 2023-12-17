@@ -132,6 +132,15 @@ export class PostService {
         userId: id,
         status,
       },
+      {
+        forum: {
+          users: {
+            some: {
+              userId: id,
+            },
+          },
+        },
+      },
     ];
 
     if (search) {
@@ -196,7 +205,7 @@ export class PostService {
               fileUrl: true,
             },
           },
-          status: true
+          status: true,
         },
       }),
     ]);
