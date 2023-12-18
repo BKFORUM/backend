@@ -148,8 +148,9 @@ export class ConversationService {
       return {
         ...c,
         isRead:
-          readUser.lastReadMessageId !== null &&
-          readUser.lastReadMessageId === c.lastMessage?.id,
+          readUser.lastReadMessageId === null
+            ? true
+            : readUser.lastReadMessageId === c.lastMessage?.id,
         avatarUrl:
           c.type === ConversationType.GROUP_CHAT
             ? c.avatarUrl
