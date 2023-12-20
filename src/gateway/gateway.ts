@@ -40,6 +40,7 @@ import { ConversationService } from '@modules/conversation/conversation.service'
     origin: '*',
     methods: ['GET', 'POST'],
   },
+  transports: ['websocket'],
 })
 @UseFilters(WebsocketExceptionsFilter)
 @UsePipes(

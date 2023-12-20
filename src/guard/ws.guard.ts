@@ -20,8 +20,8 @@ export class WsJwtGuard implements CanActivate {
         .switchToWs()
         .getClient<AuthenticatedSocket>();
       const authToken =
-        client.handshake?.headers?.authorization.split(' ')[1] ||
-        client.handshake?.headers?.authorization;
+        client.handshake?.auth?.token.split(' ')[1] ||
+        client.handshake?.auth?.token;
 
       const user = await this.authService.verifyToken(authToken);
       return Boolean(user);

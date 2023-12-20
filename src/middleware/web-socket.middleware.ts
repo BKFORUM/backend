@@ -13,8 +13,8 @@ export const WSAuthMiddleware = (
   return async (socket: AuthenticatedSocket, next) => {
     try {
       const authToken =
-        socket.handshake?.headers?.authorization.split(' ')[1] ||
-        socket.handshake?.headers?.authorization;
+        socket.handshake?.auth?.token.split(' ')[1] ||
+        socket.handshake?.auth?.token;
 
       const user = await authService.verifyToken(authToken);
       if (user) {
