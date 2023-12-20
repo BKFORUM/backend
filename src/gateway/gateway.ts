@@ -179,6 +179,7 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const users = members.map(({ user }) => user);
     const onlineUsers = this.getOnlineUsers(users);
     onlineUsers.forEach((socket) => socket.emit('onMessage', payload));
+    this.server.to(conversationId).emit('onReadMessage');
   }
 
   @OnEvent(MessageEvent.CONVERSATION_JOINED)
