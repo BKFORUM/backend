@@ -225,20 +225,23 @@ export class UserService {
         },
       },
     });
+    let friendStatus = undefined;
+    if (yourId) {
+      const requests = concat(user.sentRequests, user.receivedRequests);
 
-    const requests = concat(user.sentRequests, user.receivedRequests);
-    const yourRequest = requests.find(
-      ({ senderId, receiverId }) =>
-        yourId === senderId || yourId === receiverId,
-    );
-    const friendStatus = this.getRequestStatus(yourRequest, yourId);
+      const yourRequest = requests.find(
+        ({ senderId, receiverId }) =>
+          yourId === senderId || yourId === receiverId,
+      );
+      friendStatus = this.getRequestStatus(yourRequest, yourId);
+    }
 
     return {
       ...user,
       roles: user.roles.map((role) => {
         return role.role;
       }),
-      friendStatus: yourId === id ? undefined : friendStatus,
+      friendStatus,
     };
   };
 
