@@ -59,8 +59,8 @@ export class UserController {
   })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getById(@Param() { id }: UUIDParam) {
-    return this.userService.findById(id);
+  async getById(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser) {
+    return this.userService.findById(id, user.id);
   }
 
   @ApiOperation({

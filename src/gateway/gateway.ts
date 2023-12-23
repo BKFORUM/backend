@@ -63,7 +63,6 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const friends = await this.friendService.getFriendList(client.user);
     if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
       const onlineFriendSockets = this.getOnlineUsers(friends);
-      console.log(onlineFriendSockets);
       onlineFriendSockets.forEach((socket) => {
         socket.emit('onFriendOnline', omit(client.user, 'roles', 'iat', 'exp'));
       });

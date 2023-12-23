@@ -179,7 +179,7 @@ export class UserService {
     return user;
   };
 
-  findById = async (id: string) => {
+  findById = async (id: string, yourId?: string) => {
     const user = await this.dbContext.user.findUniqueOrThrow({
       where: {
         id,
@@ -199,6 +199,8 @@ export class UserService {
             name: true,
           },
         },
+        sentRequests: true,
+        receivedRequests: true,
         forums: {
           select: {
             id: true,
@@ -224,11 +226,19 @@ export class UserService {
       },
     });
 
+    const requests = concat(user.sentRequests, user.receivedRequests);
+    const yourRequest = requests.find(
+      ({ senderId, receiverId }) =>
+        yourId === senderId || yourId === receiverId,
+    );
+    const friendStatus = this.getRequestStatus(yourRequest, yourId);
+
     return {
       ...user,
       roles: user.roles.map((role) => {
         return role.role;
       }),
+      friendStatus: yourId === id ? undefined : friendStatus,
     };
   };
 
