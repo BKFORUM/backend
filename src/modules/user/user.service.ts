@@ -466,7 +466,33 @@ export class UserService {
     const users = await this.validateUserXlsx(data);
 
     await this.dbContext.$transaction(async (trx) => {
-      await trx.user.createMany({ data: users });
+      await Promise.all(
+        users.map(async (user) => {
+          await trx.user.upsert({
+            where: { email: user.email },
+            update: {
+              address: user.address,
+              dateOfBirth: user.dateOfBirth,
+              email: user.email,
+              facultyId: user.facultyId,
+              fullName: user.fullName,
+              gender: user.gender,
+              password: user.password,
+              phoneNumber: user.phoneNumber,
+            },
+            create: {
+              address: user.address,
+              dateOfBirth: user.dateOfBirth,
+              email: user.email,
+              facultyId: user.facultyId,
+              fullName: user.fullName,
+              gender: user.gender,
+              password: user.password,
+              phoneNumber: user.phoneNumber,
+            },
+          });
+        }),
+      );
     });
   }
 
@@ -483,17 +509,7 @@ export class UserService {
           'DD/MM/YYYY',
         ).toISOString() as any;
 
-        const existedUser = await this.dbContext.user.findUnique({
-          where: { email: row[2] },
-        });
-        if (existedUser) {
-          throw new UnprocessableEntityException(
-            `The email: ${existedUser.email} already exists`,
-          );
-        }
-
         createUserDto.email = row[2];
-
         const faculty = await this.dbContext.faculty.findUnique({
           where: { name: row[3] },
         });
@@ -508,7 +524,7 @@ export class UserService {
         createUserDto.address = row[5];
         createUserDto.phoneNumber = row[6];
         createUserDto.type = UserType.STUDENT;
-        createUserDto.password = row[1].replace(/\//g, '');
+        createUserDto.password = await hashPassword(row[1].replace(/\//g, ''));
 
         return createUserDto;
       }),
