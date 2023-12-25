@@ -30,6 +30,17 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
           path: request.url,
         });
       }
+      case 'P2002': {
+        return response.status(400).json({
+          success: false,
+          code: 400,
+          errorId: HttpStatus[400],
+          message: `The ${exception.meta.target[0]} is unique`,
+          error: message,
+          timestamp: new Date().getTime(),
+          path: request.url,
+        });
+      }
       default:
         super.catch(exception, host);
         break;
