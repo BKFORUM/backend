@@ -57,6 +57,6 @@ export class FriendsController {
   })
   @Get('me')
   getUserFriendList(@ReqUser() user: RequestUser) {
-    return this.friendsService.getFriendList(user);
+    return this.friendsService.getFriendList(user.id);
   }
 }

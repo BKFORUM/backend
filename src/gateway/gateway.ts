@@ -60,7 +60,9 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly conversationService: ConversationService,
   ) {}
   async handleConnection(client: AuthenticatedSocket) {
-    const friends = await this.friendService.getFriendList(client.user);
+    const friends = (await this.friendService.getFriendList(
+      client.user.id,
+    )) as UserDto[];
     if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
       const onlineFriendSockets = this.getOnlineUsers(friends);
       onlineFriendSockets.forEach((socket) => {
@@ -79,7 +81,9 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(client: AuthenticatedSocket) {
     this.sessions.removeUserSocket(this.getSessionId(client));
-    const friends = await this.friendService.getFriendList(client.user);
+    const friends = (await this.friendService.getFriendList(
+      client.user.id,
+    )) as UserDto[];
     if (this.sessions.getSocketsByUserId(client.user.id).length === 0) {
       const onlineFriendSockets = this.getOnlineUsers(friends);
       onlineFriendSockets.forEach((socket) => {
@@ -110,7 +114,9 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('onGetOnlineFriends')
   async handleGetOnlineFriends(@ConnectedSocket() client: AuthenticatedSocket) {
-    const friends = await this.friendService.getFriendList(client.user);
+    const friends = (await this.friendService.getFriendList(
+      client.user.id,
+    )) as UserDto[];
     const onlineFriends = [];
     friends.forEach((friend) => {
       const sockets = this.sessions.getSocketsByUserId(friend.id);
