@@ -536,7 +536,19 @@ export class UserService {
     });
 
     if (isValidated.length > 0) {
-      throw new UnprocessableEntityException(isValidated[0].children);
+      const errorMessages = [];
+
+      for (const parent of isValidated[0].children) {
+        const validationMessage = [];
+
+        for (const child of parent.children) {
+          const keys = Object.keys(child.constraints);
+
+          validationMessage.push(child.constraints[keys[0]]);
+        }
+        errorMessages.push(`Row ${parent.property}: ${validationMessage.join(', ')}`);
+      }
+      throw new UnprocessableEntityException(errorMessages);
     }
 
     return dto.entities;
