@@ -39,20 +39,21 @@ export class NotificationController {
   }
 
   @ApiProperty({
+    description: 'Read all notification of user',
+  })
+  @Patch('all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  readAllNotification(@ReqUser() { id }: RequestUser): Promise<void> {
+    console.log(id);
+    return this.notificationService.readAllNotifications(id);
+  }
+
+  @ApiProperty({
     description: 'Mark a notification as read',
   })
   @Patch(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   markAsReadNotification(@Param() { id }: UUIDParam): Promise<void> {
     return this.notificationService.markAsReadNotification(id);
-  }
-
-  @ApiProperty({
-    description: 'Read all notification of user',
-  })
-  @Patch('all')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  readAllNotification(@ReqUser() { id }: RequestUser): Promise<void> {
-    return this.notificationService.readAllNotifications(id);
   }
 }
