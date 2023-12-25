@@ -1,27 +1,37 @@
+import { FacultyService } from '@modules/faculty';
 import {
   BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
-import { Friendship, ResourceStatus, User, UserType } from '@prisma/client';
-import { isNotEmpty } from 'class-validator';
+import {
+  Friendship,
+  Gender,
+  ResourceStatus,
+  User,
+  UserType,
+} from '@prisma/client';
+import { isNotEmpty, validate } from 'class-validator';
 import { concat, isEmpty, omit } from 'lodash';
+import * as moment from 'moment';
 import {
   RequestUser,
   compareHash,
   getDay,
   getStudentAvatarUrl,
   hashPassword,
+  readXlsxFile,
 } from 'src/common';
 import { getOrderBy } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
 import { PaginatedResult, Pagination } from 'src/providers';
 import { RoleService } from '../roles';
 import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
+import { ImportUserDto } from './dto/import-user.dto';
 import { UserResponse } from './interfaces';
 import { filterByInOrNotInForum, filterBySearch, selectUser } from './utils';
-import { FacultyService } from '@modules/faculty';
 
 @Injectable()
 export class UserService {
@@ -445,5 +455,74 @@ export class UserService {
         password,
       },
     });
+  }
+
+  async importUsers(file: Express.Multer.File): Promise<void> {
+    if (!file) {
+      throw new BadRequestException('Please upload a CSV file.');
+    }
+
+    const data = await readXlsxFile(file.filename);
+    const users = await this.validateUserXlsx(data);
+
+    await this.dbContext.$transaction(async (trx) => {
+      await trx.user.createMany({ data: users });
+    });
+  }
+
+  async validateUserXlsx(data: string[][]): Promise<CreateUserDto[]> {
+    const dto = new ImportUserDto();
+
+    dto.entities = await Promise.all(
+      data.map(async (row) => {
+        const createUserDto = new CreateUserDto();
+
+        createUserDto.fullName = row[0];
+        createUserDto.dateOfBirth = moment(
+          row[1],
+          'DD/MM/YYYY',
+        ).toISOString() as any;
+
+        const existedUser = await this.dbContext.user.findUnique({
+          where: { email: row[2] },
+        });
+        if (existedUser) {
+          throw new UnprocessableEntityException(
+            `The email: ${existedUser.email} already exists`,
+          );
+        }
+
+        createUserDto.email = row[2];
+
+        const faculty = await this.dbContext.faculty.findUnique({
+          where: { name: row[3] },
+        });
+        if (!faculty) {
+          throw new UnprocessableEntityException(
+            `The faculty: ${row[3]} does not exist`,
+          );
+        }
+
+        createUserDto.facultyId = faculty.id;
+        createUserDto.gender = row[4] as Gender;
+        createUserDto.address = row[5];
+        createUserDto.phoneNumber = row[6];
+        createUserDto.type = UserType.STUDENT;
+        createUserDto.password = row[1].replace(/\//g, '');
+
+        return createUserDto;
+      }),
+    );
+
+    const isValidated = await validate(dto, {
+      whitelist: true,
+      stopAtFirstError: true,
+    });
+
+    if (isValidated.length > 0) {
+      throw new UnprocessableEntityException(isValidated[0].children);
+    }
+
+    return dto.entities;
   }
 }
