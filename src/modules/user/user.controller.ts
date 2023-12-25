@@ -36,6 +36,7 @@ import { ForumService } from '@modules/forums';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Readable } from 'stream';
+import { FriendsService } from '@modules/friends';
 
 @ApiTags('User')
 @UseGuards(AccessTokenGuard)
@@ -46,6 +47,7 @@ export class UserController {
     private readonly userService: UserService,
     private readonly postService: PostService,
     private readonly forumService: ForumService,
+    private readonly friendService: FriendsService,
   ) {}
 
   @ApiOperation({
@@ -108,6 +110,18 @@ export class UserController {
     @ReqUser() user: RequestUser,
   ) {
     return this.postService.getPostsOfUser(id, query, user);
+  }
+
+  @ApiOperation({
+    description: 'get posts of user by userId',
+  })
+  @Get(':id/friends')
+  @HttpCode(HttpStatus.OK)
+  async getFriendsOfUser(
+    @Param() { id }: UUIDParam,
+    @ReqUser() user: RequestUser,
+  ) {
+    return this.friendService.getFriendList(id, user);
   }
 
   @ApiOperation({

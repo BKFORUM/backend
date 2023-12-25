@@ -32,6 +32,7 @@ import { CreateUserDto, GetUsersQueryDto, UpdateUserDto } from './dto';
 import { ImportUserDto } from './dto/import-user.dto';
 import { UserResponse } from './interfaces';
 import { filterByInOrNotInForum, filterBySearch, selectUser } from './utils';
+import { getRequestStatus } from '@modules/friends/utils';
 
 @Injectable()
 export class UserService {
@@ -243,7 +244,7 @@ export class UserService {
         ({ senderId, receiverId }) =>
           yourId === senderId || yourId === receiverId,
       );
-      friendStatus = this.getRequestStatus(yourRequest, yourId);
+      friendStatus = getRequestStatus(yourRequest, yourId);
     }
 
     return {
@@ -313,7 +314,7 @@ export class UserService {
         ({ senderId, receiverId }) =>
           reqUser.id === senderId || reqUser.id === receiverId,
       );
-      const friendStatus = this.getRequestStatus(yourRequest, reqUser.id);
+      const friendStatus = getRequestStatus(yourRequest, reqUser.id);
 
       return {
         ...omit(user, 'sentRequests', 'receivedRequests'),
@@ -322,18 +323,6 @@ export class UserService {
     });
 
     return Pagination.of({ skip, take }, total, mappedUsers);
-  }
-
-  private getRequestStatus(request: Friendship, userId: string) {
-    if (!request) return 'NOT FRIEND';
-    switch (request.status) {
-      case ResourceStatus.PENDING:
-        const pendingStatus =
-          userId === request.receiverId ? 'PENDING_RECEIVED' : 'PENDING_SENT';
-        return pendingStatus;
-      default:
-        return request.status;
-    }
   }
 
   updateUser = async (id: string, data: UpdateUserDto) => {

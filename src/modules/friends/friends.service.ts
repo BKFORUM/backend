@@ -7,6 +7,7 @@ import { ConversationType, ResourceStatus } from '@prisma/client';
 import { PrismaService } from 'src/database/services';
 import { MessageEvent } from 'src/gateway/enum';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { getRequestStatus } from './utils';
 
 @Injectable()
 export class FriendsService {
@@ -229,33 +230,50 @@ export class FriendsService {
     );
   }
 
-  async getFriendList(user: RequestUser) {
+  async getFriendList(userId: string, reqUser?: RequestUser) {
     const friendList = await this.dbContext.friendship.findMany({
       where: {
         OR: [
           {
-            receiverId: user.id,
+            receiverId: userId,
             status: ResourceStatus.ACTIVE,
           },
           {
-            senderId: user.id,
+            senderId: userId,
             status: ResourceStatus.ACTIVE,
           },
         ],
       },
       select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
         senderId: true,
         receiverId: true,
         sender: selectUser,
         receiver: selectUser,
+        status: true,
       },
     });
 
     const friends = friendList.map(({ senderId, sender, receiver }) => {
-      const friend = user.id === senderId ? receiver : sender;
+      const friend = userId === senderId ? receiver : sender;
+
       return friend;
     });
 
+    if (reqUser) {
+      const request = friendList.find(
+        ({ senderId, receiverId }) =>
+          senderId === reqUser.id || receiverId === reqUser.id,
+      );
+      let friendStatus = getRequestStatus(request, reqUser.id);
+      if (reqUser.id === userId) friendStatus = 'YOU';
+      return {
+        friendStatus,
+        friends,
+      };
+    }
     return friends;
   }
 }
