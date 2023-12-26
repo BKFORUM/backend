@@ -110,6 +110,7 @@ export class ConversationService {
             select: {
               id: true,
               conversationId: true,
+              type: true,
               createdAt: true,
               updatedAt: true,
               userId: true,

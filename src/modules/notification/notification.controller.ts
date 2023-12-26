@@ -44,7 +44,6 @@ export class NotificationController {
   @Patch('all')
   @HttpCode(HttpStatus.NO_CONTENT)
   readAllNotification(@ReqUser() { id }: RequestUser): Promise<void> {
-    console.log(id);
     return this.notificationService.readAllNotifications(id);
   }
 
