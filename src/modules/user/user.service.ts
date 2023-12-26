@@ -500,7 +500,7 @@ export class UserService {
 
         createUserDto.email = row[2];
         const faculty = await this.dbContext.faculty.findUnique({
-          where: { name: row[3] },
+          where: { name: row[3] || '' },
         });
         if (!faculty) {
           throw new UnprocessableEntityException(

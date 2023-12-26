@@ -173,7 +173,7 @@ export class UserController {
         ) {
           callback(
             new UnsupportedMediaTypeException(
-              `Invalid file type. Please upload a CSV file.`,
+              `Invalid file type. Please upload a Xlsx file.`,
             ),
             false,
           );
