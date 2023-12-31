@@ -6,11 +6,11 @@ export class ChangePasswordDto {
     description: 'New password',
   })
   @MinLength(6)
-  password: string;
+  newPassword: string;
 
   @ApiProperty({
-    description: 'Confirm password',
+    description: 'New password',
   })
   @MinLength(6)
-  confirmPassword: string;
+  oldPassword: string;
 }

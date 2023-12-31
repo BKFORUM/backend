@@ -209,9 +209,9 @@ export class AuthService {
   }
 
   async changePassword(reqUser: RequestUser, body: ChangePasswordDto) {
-    const { password, confirmPassword } = body;
-    if (password !== confirmPassword) {
-      throw new BadRequestException('The confirm password is invalid');
+    const { oldPassword, newPassword } = body;
+    if (oldPassword !== newPassword) {
+      throw new BadRequestException('You are input the same password');
     }
 
     const user = await this.dbContext.user.findUnique({
@@ -220,19 +220,19 @@ export class AuthService {
       },
     });
 
-    const isPasswordChanged = await compareHash(password, user.password);
-    if (!isPasswordChanged) {
-      throw new BadRequestException('You have inputted a recent password');
+    const isOldPassword = await compareHash(oldPassword, user.password);
+    if (!isOldPassword) {
+      throw new BadRequestException('You have inputted a wrong password');
     }
 
-    const newPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(newPassword);
 
     await this.dbContext.user.update({
       where: {
         id: reqUser.id,
       },
       data: {
-        password: newPassword,
+        password: hashedPassword,
       },
     });
   }
