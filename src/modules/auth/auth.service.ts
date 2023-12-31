@@ -12,6 +12,7 @@ import { UserService } from '../user';
 import { CreateUserDto } from '../user/dto';
 import { getUsersPayload } from './dto/getUserPayload.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -204,6 +205,35 @@ export class AuthService {
       await trx.verificationToken.delete({
         where: { id: resetToken.id },
       });
+    });
+  }
+
+  async changePassword(reqUser: RequestUser, body: ChangePasswordDto) {
+    const { password, confirmPassword } = body;
+    if (password !== confirmPassword) {
+      throw new BadRequestException('The confirm password is invalid');
+    }
+
+    const user = await this.dbContext.user.findUnique({
+      where: {
+        id: reqUser.id,
+      },
+    });
+
+    const isPasswordChanged = await compareHash(password, user.password);
+    if (!isPasswordChanged) {
+      throw new BadRequestException('You have inputted a recent password');
+    }
+
+    const newPassword = await hashPassword(password);
+
+    await this.dbContext.user.update({
+      where: {
+        id: reqUser.id,
+      },
+      data: {
+        password: newPassword,
+      },
     });
   }
 }
