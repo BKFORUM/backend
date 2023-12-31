@@ -210,7 +210,7 @@ export class AuthService {
 
   async changePassword(reqUser: RequestUser, body: ChangePasswordDto) {
     const { oldPassword, newPassword } = body;
-    if (oldPassword !== newPassword) {
+    if (oldPassword === newPassword) {
       throw new BadRequestException('You are input the same password');
     }
 
