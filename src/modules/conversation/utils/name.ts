@@ -26,3 +26,11 @@ export const getConversationDisplayName = (
     .map((member) => getAuthorDisplayName(member))
     .join(', ');
 };
+
+export const getOtherUserAvatar = (
+  users: GetConversationMemberPayload[],
+  user: RequestUser,
+) => {
+  const friend = users.find(({ userId }) => userId !== user.id)!.user;
+  return friend.avatarUrl;
+};

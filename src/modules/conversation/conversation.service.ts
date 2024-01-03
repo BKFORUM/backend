@@ -14,7 +14,11 @@ import {
   GetConversationPayload,
   GetMessageResponse,
 } from './interface/get-conversation.payload';
-import { getAuthorDisplayName, getConversationDisplayName } from './utils/name';
+import {
+  getAuthorDisplayName,
+  getConversationDisplayName,
+  getOtherUserAvatar,
+} from './utils/name';
 import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from '@modules/user';
@@ -155,17 +159,12 @@ export class ConversationService {
         avatarUrl:
           c.type === ConversationType.GROUP_CHAT
             ? c.avatarUrl
-            : this.getOtherUserAvatar(c.users, user),
+            : getOtherUserAvatar(c.users, user),
         displayName: getConversationDisplayName(c, user),
       };
     });
 
     return Pagination.of({ skip, take }, total, mappedConversations);
-  }
-
-  getOtherUserAvatar(users: GetConversationMemberPayload[], user: RequestUser) {
-    const friend = users.find(({ userId }) => userId !== user.id)!.user;
-    return friend.avatarUrl;
   }
 
   findOne(id: number) {
@@ -184,7 +183,7 @@ export class ConversationService {
     conversationId: string,
     { content, type }: CreateMessageDto,
     user: RequestUser,
-  ): Promise<GetMessageResponse> {
+  ) {
     const conversation = await this.dbContext.conversation.findUnique({
       where: {
         id: conversationId,
@@ -267,7 +266,7 @@ export class ConversationService {
         avatarUrl:
           message.conversation.type === ConversationType.GROUP_CHAT
             ? message.conversation.avatarUrl
-            : this.getOtherUserAvatar(message.conversation.users, user),
+            : getOtherUserAvatar(message.conversation.users, user),
         displayName: getConversationDisplayName(message.conversation, user),
       },
       author: {
@@ -276,7 +275,7 @@ export class ConversationService {
       },
     };
 
-    this.event.emit('message.created', mappedMessage);
+    this.event.emit('message.created', message);
     return mappedMessage;
   }
 

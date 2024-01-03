@@ -173,6 +173,16 @@ export class ForumService {
     const isAdmin = user.roles.includes(UserRole.ADMIN);
     const isHomeRoom = type === ForumType.HOMEROOM;
     const isAbleCreateForumType = (isAdmin && isHomeRoom) || !isHomeRoom;
+    const isDuplicateName = await this.dbContext.forum.findFirst({
+      where: {
+        name,
+      },
+    });
+    if (isDuplicateName) {
+      throw new BadRequestException(
+        'You cannot create forum with duplicate name',
+      );
+    }
 
     if (!isAbleCreateForumType) {
       throw new BadRequestException(
@@ -459,20 +469,23 @@ export class ForumService {
         where: { id: forumId },
         data: {
           status,
-          conversation: {
-            create: {
-              displayName: forum.name,
-              avatarUrl: forum.avatarUrl,
-              type: ConversationType.GROUP_CHAT,
-              users: {
-                createMany: {
-                  data: forumActiveUsers.map(({ userId }) => ({
-                    userId,
-                  })),
-                },
-              },
-            },
-          },
+          conversation:
+            status === ResourceStatus.ACTIVE
+              ? {
+                  create: {
+                    displayName: forum.name,
+                    avatarUrl: forum.avatarUrl,
+                    type: ConversationType.GROUP_CHAT,
+                    users: {
+                      createMany: {
+                        data: forumActiveUsers.map(({ userId }) => ({
+                          userId,
+                        })),
+                      },
+                    },
+                  },
+                }
+              : undefined,
         },
       });
 

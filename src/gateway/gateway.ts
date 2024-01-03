@@ -23,7 +23,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Like, Notification } from '@prisma/client';
+import { ConversationType, Like, Notification } from '@prisma/client';
 import { isEmpty, omit } from 'lodash';
 import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
@@ -34,6 +34,11 @@ import { GatewaySessionManager } from './gateway.session';
 import { FriendsService } from '@modules/friends';
 import { ReadMessageDto, UserDto } from './dto';
 import { ConversationService } from '@modules/conversation/conversation.service';
+import {
+  getAuthorDisplayName,
+  getConversationDisplayName,
+  getOtherUserAvatar,
+} from '@modules/conversation/utils/name';
 
 @WebSocketGateway({
   cors: {
@@ -183,10 +188,27 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
     const users = members.map(({ user }) => user);
     const onlineUsers = this.getOnlineUsers(users);
-    onlineUsers.forEach((socket) => socket.emit('onMessage', payload));
-    this.server
-      .to(conversationId)
-      .emit('onReadMessage', { messageId: payload.id, conversationId });
+    onlineUsers.forEach((socket) => {
+      const mappedMessage = {
+        ...payload,
+        conversation: {
+          ...omit(payload.conversation, 'users'),
+          avatarUrl:
+            payload.conversation.type === ConversationType.GROUP_CHAT
+              ? payload.conversation.avatarUrl
+              : getOtherUserAvatar(payload.conversation.users, socket.user),
+          displayName: getConversationDisplayName(
+            payload.conversation,
+            socket.user,
+          ),
+        },
+        author: {
+          ...payload.author.user,
+          displayName: getAuthorDisplayName(payload.author),
+        },
+      };
+      socket.emit('onMessage', mappedMessage);
+    });
   }
 
   @OnEvent(MessageEvent.CONVERSATION_JOINED)
