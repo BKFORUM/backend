@@ -3,12 +3,14 @@ import { UserRole } from '@common/types/enum';
 import { GetCommentDto } from '@modules/comments/dto';
 import { CreateCommentDto } from '@modules/comments/dto/create-comment.dto';
 import { CommentResponse } from '@modules/comments/interfaces';
+import { NotificationService } from '@modules/notification/notification.service';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { GroupUserType, Like, Prisma, ResourceStatus } from '@prisma/client';
 import { isEmpty } from 'class-validator';
 import { differenceBy, first } from 'lodash';
 import { getOrderBy, searchByMode } from 'src/common/utils/prisma';
 import { PrismaService } from 'src/database/services';
+import { MessageEvent } from 'src/gateway/enum';
 import { PaginatedResult, Pagination } from 'src/providers';
 import { CreatePostDto } from './dto/create-post.dto';
 import { GetAllPostsDto } from './dto/get-all-posts.dto';
@@ -18,14 +20,17 @@ import { PostResponse } from './interfaces/post-response.interface';
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name);
-  constructor(private dbContext: PrismaService) {}
+  constructor(
+    private dbContext: PrismaService,
+    private notificationService: NotificationService,
+  ) {}
 
   async getAllPosts(
     query: GetAllPostsDto,
     user: RequestUser,
   ): Promise<PaginatedResult<PostResponse>> {
     const { search, skip, take, order, status } = query;
-    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
+    const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       { status },
     ];
     if (!user.roles.includes(UserRole.ADMIN)) {
@@ -118,7 +123,7 @@ export class PostService {
 
   async getPostsOfUser(id: string, query: GetAllPostsDto) {
     const { search, skip, take, order, status } = query;
-    let whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
+    const whereConditions: Prisma.Enumerable<Prisma.PostWhereInput> = [
       {
         userId: id,
         status,
@@ -426,15 +431,15 @@ export class PostService {
     this.logger.log('Created a post record', { post });
   }
 
-  createComment(
+  async createComment(
     id: string,
-    userId: string,
+    user: RequestUser,
     dto: CreateCommentDto,
   ): Promise<CommentResponse> {
-    return this.dbContext.comment.create({
+    const comment = await this.dbContext.comment.create({
       data: {
         postId: id,
-        userId,
+        userId: user.id,
         content: dto.content,
       },
       include: {
@@ -450,43 +455,75 @@ export class PostService {
             gender: true,
           },
         },
+        post: true,
       },
     });
+
+    const postOwnerId = comment.post.userId;
+    const commentOwnerId = user.id;
+
+    if (postOwnerId !== commentOwnerId) {
+      await this.notificationService.notifyNotification(
+        comment.post.userId,
+        MessageEvent.COMMENT_CREATED,
+        {
+          content: `'${user.fullName}' đã đăng một bình luận vào bài viết của bạn`,
+          modelId: comment.postId,
+          modelName: 'post',
+          userId: comment.post.userId,
+        },
+      );
+    }
+
+    
+
+    return comment;
   }
 
-  getComments(postId: string, dto: GetCommentDto): Promise<CommentResponse[]> {
-    return this.dbContext.comment.findMany({
-      where: {
-        postId,
-      },
-      skip: dto.skip,
-      take: dto.take,
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            phoneNumber: true,
-            address: true,
-            avatarUrl: true,
-            dateOfBirth: true,
-            email: true,
-            gender: true,
+  async getComments(
+    postId: string,
+    dto: GetCommentDto,
+  ) {
+    const [comments, totalRecords] = await Promise.all([
+      this.dbContext.comment.findMany({
+        where: {
+          postId,
+        },
+        skip: dto.skip,
+        take: dto.take,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              phoneNumber: true,
+              address: true,
+              avatarUrl: true,
+              dateOfBirth: true,
+              email: true,
+              gender: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: Prisma.SortOrder.desc,
-      },
-    });
+        orderBy: {
+          createdAt: Prisma.SortOrder.desc,
+        },
+      }),
+      this.dbContext.comment.count({ where: { postId } }),
+    ]);
+
+    return {
+      totalRecords,
+      data: comments,
+    }
   }
 
-  async likePost(postId: string, userId: string): Promise<Like> {
+  async likePost(postId: string, user: RequestUser): Promise<Like> {
     const haveAlreadyLiked = await this.dbContext.like.findUnique({
       where: {
         userId_postId: {
           postId,
-          userId,
+          userId: user.id,
         },
       },
     });
@@ -494,17 +531,36 @@ export class PostService {
       throw new BadRequestException('This user have already liked this post');
     }
 
-    await this.checkIfUserIsInTheSamePostForum(postId, userId);
+    await this.checkIfUserIsInTheSamePostForum(postId, user.id);
 
-    return this.dbContext.like.create({
+    const like = await this.dbContext.like.create({
       data: {
         postId,
-        userId,
+        userId: user.id,
       },
       include: {
         user: true,
+        post: true,
       },
     });
+
+    const postOwnerId = like.post.userId;
+    const likeOwnerId = user.id;
+
+    if (postOwnerId !== likeOwnerId) {
+      await this.notificationService.notifyNotification(
+        postOwnerId,
+        MessageEvent.LIKE_CREATED,
+        {
+          content: `'${user.fullName}' đã thích một bài viết của bạn`,
+          modelId: like.postId,
+          modelName: 'post',
+          userId: postOwnerId,
+        },
+      );
+    }
+
+    return like;
   }
 
   async unlikePost(postId: string, userId: string): Promise<void> {

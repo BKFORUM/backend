@@ -9,6 +9,7 @@ import { isNotEmpty } from 'class-validator';
 import { concat, isEmpty, omit } from 'lodash';
 import {
   RequestUser,
+  compareHash,
   getDay,
   getStudentAvatarUrl,
   hashPassword,
@@ -315,6 +316,7 @@ export class UserService {
       where: { id },
       select: {
         id: true,
+        password: true,
       },
     });
 
@@ -324,6 +326,12 @@ export class UserService {
 
     if (isEmpty(existedUser.id)) {
       throw new BadRequestException('The user does not exist');
+    }
+
+    if (password && compareHash(password, existedUser.password)) {
+      throw new BadRequestException(
+        'The new password must be different from the current one',
+      );
     }
 
     const updateRoles =
@@ -377,5 +385,24 @@ export class UserService {
     }
 
     return users;
+  }
+
+  async resetPassword(userId: string) {
+    const user = await this.dbContext.user.findUniqueOrThrow({
+      where: {
+        id: userId,
+      },
+    });
+
+    const password = await this.generatePassword(user.dateOfBirth);
+
+    await this.dbContext.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        password,
+      },
+    });
   }
 }

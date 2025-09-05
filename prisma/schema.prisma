@@ -76,6 +76,7 @@ model User {
   sentRequests     Friendship[]         @relation("sender_friendships")
   receivedRequests Friendship[]         @relation("receiver_friendships")
   conversations    UserToConversation[]
+  notifications    Notification[]
 
   @@unique([email], map: "ixuq_user_email")
   @@map("user")
@@ -376,4 +377,19 @@ model Message {
 
 
   @@map("message")
+}
+
+model Notification {
+  id        String   @id(map: "pk_notification") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content   String   @db.VarChar(255)
+  modelId   String   @map("model_id") @db.Uuid
+  modelName String   @map("model_name") @db.VarChar(50)
+  userId    String   @map("user_id") @db.Uuid
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification")
 }

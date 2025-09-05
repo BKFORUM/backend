@@ -91,9 +91,9 @@ export class PostController {
   createComment(
     @Param() { id }: UUIDParam,
     @Body() dto: CreateCommentDto,
-    @ReqUser('id') userId: string,
+    @ReqUser() user: RequestUser,
   ): Promise<CommentResponse> {
-    return this.postService.createComment(id, userId, dto);
+    return this.postService.createComment(id, user, dto);
   }
 
   @ApiProperty({
@@ -104,25 +104,29 @@ export class PostController {
   getComments(
     @Param() { id }: UUIDParam,
     @Query() dto: GetCommentDto,
-  ): Promise<CommentResponse[]> {
+  ) {
     return this.postService.getComments(id, dto);
   }
 
   @ApiProperty({
-    description: 'Like a post'
+    description: 'Like a post',
   })
   @Post(':id/likes')
   @HttpCode(HttpStatus.CREATED)
-  likePost(@Param() { id }: UUIDParam, @ReqUser('id') userId: string): Promise<Like> {
-    return this.postService.likePost(id, userId);
+  likePost(@Param() { id }: UUIDParam, @ReqUser() user: RequestUser): Promise<Like> {
+    console.log(user);
+    return this.postService.likePost(id, user);
   }
 
   @ApiProperty({
-    description: 'Unlike a post'
+    description: 'Unlike a post',
   })
   @Delete(':id/likes')
   @HttpCode(HttpStatus.CREATED)
-  unlikePost(@Param() { id }: UUIDParam, @ReqUser('id') userId: string): Promise<void> {
+  unlikePost(
+    @Param() { id }: UUIDParam,
+    @ReqUser('id') userId: string,
+  ): Promise<void> {
     return this.postService.unlikePost(id, userId);
   }
 }

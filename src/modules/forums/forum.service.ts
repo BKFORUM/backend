@@ -179,15 +179,14 @@ export class ForumService {
       );
     }
 
-    if (userIds.includes(moderatorId)) {
-      throw new BadRequestException(
-        'You cannot include moderator in the member list',
-      );
-    }
-
     await this.userService.findById(moderatorId);
 
     if (userIds && userIds.length > 0) {
+      if (userIds.includes(moderatorId)) {
+        throw new BadRequestException(
+          'You cannot include moderator in the member list',
+        );
+      }
       await this.userService.validateUserIds(userIds);
     }
 

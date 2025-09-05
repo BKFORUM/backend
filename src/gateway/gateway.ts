@@ -1,6 +1,8 @@
-import { UUIDParam, AuthenticatedSocket } from '@common/types';
-import { CreateMessageDto } from '@modules/message/dto/create-message.dto';
+import { AuthenticatedSocket, UUIDParam } from '@common/types';
+import { AuthService } from '@modules/auth';
+import { GetConversationPayload, GetMessageResponse } from '@modules/conversation/interface/get-conversation.payload';
 import { MessageService } from '@modules/message/message.service';
+import { UserResponse } from '@modules/user/interfaces';
 import {
   Logger,
   UseFilters,
@@ -8,29 +10,24 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { Like, Notification } from '@prisma/client';
+import { isEmpty } from 'lodash';
 import { Server } from 'socket.io';
 import { WebsocketExceptionsFilter } from 'src/filters/web-socket.filter';
 import { WsJwtGuard } from 'src/guard/ws.guard';
-import { GatewaySessionManager } from './gateway.session';
 import { WSAuthMiddleware } from 'src/middleware';
-import { AuthService } from '@modules/auth';
-import { OnEvent } from '@nestjs/event-emitter';
-import { CreateMessageResponse } from '@modules/conversation/dto/create-message.response';
 import { MessageEvent } from './enum';
-import {
-  GetConversationPayload,
-  GetMessageResponse,
-} from '@modules/conversation/interface/get-conversation.payload';
-import { UserResponse } from '@modules/user/interfaces';
+import { GatewaySessionManager } from './gateway.session';
 
 @WebSocketGateway({
   cors: {
@@ -117,15 +114,6 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(conversationId).emit('onMessage', payload);
   }
 
-  @OnEvent(MessageEvent.CONVERSATION_CREATED)
-  handleConversationCreateEvent(payload: GetConversationPayload) {
-    const { users, id } = payload;
-    users.forEach(({ userId }) => {
-      const socket = this.sessions.getUserSocket(userId);
-      if (socket) socket.join(id);
-    });
-  }
-
   @OnEvent(MessageEvent.CONVERSATION_JOINED)
   handleConversationJoinedEvent(payload: {
     users: UserResponse[];
@@ -139,5 +127,36 @@ export class EventGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleLeft(payload: { user: UserResponse; conversationId: string }) {
     const { user, conversationId } = payload;
     this.server.to(conversationId).emit('onUserLeaveConversation', user);
+  }
+
+  @OnEvent(MessageEvent.CONVERSATION_CREATED)
+  handleConversationCreateEvent(payload: GetConversationPayload) {
+    const { users, id } = payload;
+    users.forEach(({ userId }) => {
+      const socket = this.sessions.getUserSocket(userId);
+      if (socket) socket.join(id);
+    });
+  }
+
+  @OnEvent(MessageEvent.COMMENT_CREATED)
+  handleCommentCreateEvent(payload: Notification, userId: string) {
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
+
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onCommentCreated', payload);
+      })
+    }
+  }
+
+  @OnEvent(MessageEvent.LIKE_CREATED)
+  handleLikeCreateEvent(payload: Like, userId: string) {
+    const authorSockets = this.sessions.getSocketsByUserId(userId);
+
+    if (!isEmpty(authorSockets)) {
+      authorSockets.forEach((socket) => {
+        socket.emit('onLikeCreated', payload);
+      })
+    }
   }
 }
