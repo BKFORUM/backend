@@ -33,7 +33,7 @@
 #             sudo docker image prune -a -f
 #             sudo docker pull ${{ secrets.REGISTRY }}:latest
 #             sudo docker compose up -d
-name: Build Docker Image
+name: Build DockerImage
 
 on:
   workflow_dispatch:
