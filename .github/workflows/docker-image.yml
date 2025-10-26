@@ -33,5 +33,22 @@
 #             sudo docker image prune -a -f
 #             sudo docker pull ${{ secrets.REGISTRY }}:latest
 #             sudo docker compose up -d
+name: Build Docker Image
+
 on:
   workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-image:latest .
+
+      - name: Show Docker images
+        run: docker images
+
